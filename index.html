@@ -47,7 +47,15 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 @supports (height:100dvh){ html,body{height:100dvh} }
+html{
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+button,select,input,textarea{touch-action:manipulation}
 body{
+  overscroll-behavior:none;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
   background:
     radial-gradient(1200px 600px at 50% -200px, #2b1d0c 0%, transparent 60%),
     repeating-linear-gradient(93deg, transparent 0 120px, rgba(255,255,255,.012) 120px 121px),
@@ -62,7 +70,8 @@ body{
 header{
   flex:0 0 auto;
   text-align:center;
-  padding:20px 16px 0;
+  /* in an installed PWA the app draws under the iPhone status bar — pad past it */
+  padding:calc(20px + env(safe-area-inset-top)) 16px 0;
   position:relative;
   z-index:5;
 }
@@ -413,18 +422,46 @@ footer{
   font-family:var(--ui);font-size:11px;letter-spacing:.22em;color:#6d5528;
 }
 
+/* Touch screens: taps must not leave buttons stuck in their hover state */
+@media (hover:none){
+  .die-btn:hover{background:rgba(255,250,235,.6);color:var(--sepia);border-color:#b49a67}
+  .tbtn:hover{background:transparent;color:var(--sepia-faint);border-color:#b49a67}
+  .sbtn:hover{color:var(--vellum-3);background:transparent;border-color:#6b4d1f}
+  .sbtn.danger:hover{border-color:#7a2c1c;color:#c96a4f;background:transparent}
+  .sbtn.armed,.sbtn.armed:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+  .btn:hover{background:transparent;color:var(--sepia);border-color:var(--gilt-2)}
+  .btn.red:hover{background:transparent;color:var(--oxblood);border-color:var(--oxblood)}
+  .d20btn:hover{transform:none;filter:none}
+  .bkmk:hover{transform:translateY(-6px);color:var(--vellum-3)}
+  .bkmk.active,.bkmk.active:hover{transform:translateY(2px);color:var(--ink)}
+  #sendBtn:hover{background:var(--oxblood)}
+  #sendBtn.halt:hover{background:#3d3126}
+}
+
+/* Installed as a home-screen app: reclaim the chrome the browser used to own */
+@media (display-mode:standalone){
+  footer{display:none}
+  main{padding-bottom:8px}
+}
+
+#shelfMore{display:none}
+
 @media (max-width:700px){
-  header{padding:12px 10px 0}
+  header{padding:calc(10px + env(safe-area-inset-top)) 10px 0}
   .rule-orn{margin:6px auto 0}
   nav{gap:8px;justify-content:flex-start;overflow-x:auto;padding:0 10px;scrollbar-width:none}
   nav::-webkit-scrollbar{display:none}
   .bkmk{flex:0 0 auto;white-space:nowrap;padding:12px 14px 16px;font-size:12.5px;letter-spacing:.1em}
   #shelf{width:calc(100% - 16px);padding:6px 8px;gap:6px;margin-top:8px}
   .shelf-lab{display:none}
-  #campSel{max-width:132px;font-size:16px}
-  #campName{min-width:110px;font-size:16px}
-  .shelf-btns{margin-left:0;width:100%;justify-content:space-between}
+  #campSel{max-width:38vw;font-size:16px}
+  #campName{min-width:90px;font-size:16px}
+  /* campaign actions fold behind ⋯ so the shelf stays one row tall */
+  #shelfMore{display:block;margin-left:auto;min-height:36px;padding:8px 12px}
+  .shelf-btns{display:none;margin-left:0;width:100%;justify-content:space-between}
+  #shelf.open .shelf-btns{display:flex}
   .sbtn{padding:8px 10px;min-height:36px}
+  .entry{margin-bottom:18px}
   main{padding:8px 8px 10px}
   #tome{padding-top:16px}
   #scroll{padding:4px 14px 14px}
@@ -468,6 +505,7 @@ footer{
   <span class="shelf-lab">⚑ CAMPAIGN</span>
   <select id="campSel" title="Switch campaign"></select>
   <input id="campName" placeholder="name this campaign…" title="Rename this campaign" autocomplete="off">
+  <button class="sbtn" id="shelfMore" title="Campaign actions" aria-expanded="false">⋯</button>
   <div class="shelf-btns">
     <button class="sbtn" id="campNew" title="Begin a fresh campaign">＋ NEW</button>
     <button class="sbtn" id="campExport" title="Save this campaign as a file">⇩ EXPORT</button>
@@ -1439,6 +1477,33 @@ S("campFile").addEventListener("change",e=>{
   if(f) importCampaignFile(f);
   e.target.value = "";
 });
+
+S("shelfMore").addEventListener("click",()=>{
+  const open = S("shelf").classList.toggle("open");
+  S("shelfMore").setAttribute("aria-expanded", open ? "true" : "false");
+});
+
+/* ================================================================
+   SAFARI PWA — keep the layout glued to the visual viewport.
+   In a standalone web app iOS does NOT resize the page when the
+   keyboard opens; without this the quill hides behind the keys.
+================================================================ */
+if(window.visualViewport){
+  const vv = window.visualViewport;
+  let raf = 0;
+  const fit = ()=>{
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(()=>{
+      const shrunk = vv.height < window.innerHeight - 1;
+      document.body.style.height = shrunk ? Math.round(vv.height)+"px" : "";
+      window.scrollTo(0,0);                 /* undo Safari's auto-pan */
+      scrollEl.scrollTop = scrollEl.scrollHeight;
+    });
+  };
+  vv.addEventListener("resize", fit);
+  vv.addEventListener("scroll", ()=>window.scrollTo(0,0));
+}
+input.addEventListener("focus", ()=>setTimeout(()=>{ scrollEl.scrollTop = scrollEl.scrollHeight; }, 300));
 
 /* ================================================================
    BOOT

@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Arbiter — AI Dungeon Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Alegreya+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ GRIMOIRE TOKENS ============ */
+:root{
+  --ink:#171008;            /* scriptorium desk */
+  --ink-2:#221809;
+  --vellum:#e9dcbc;         /* parchment */
+  --vellum-2:#ddcda3;
+  --vellum-3:#cdb98b;
+  --oxblood:#801f12;        /* rubrication red */
+  --oxblood-2:#5c150c;
+  --verdigris:#3d6b58;      /* aged copper */
+  --gilt:#c1913a;           /* gold leaf */
+  --gilt-2:#8f6a24;
+  --sepia:#4a3418;          /* body ink on vellum */
+  --sepia-faint:#7a6544;
+  --disp:'Cinzel Decorative',serif;
+  --fell:'IM Fell English',serif;
+  --fellsc:'IM Fell English SC',serif;
+  --ui:'Alegreya Sans SC',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 600px at 50% -200px, #2b1d0c 0%, transparent 60%),
+    repeating-linear-gradient(93deg, transparent 0 120px, rgba(255,255,255,.012) 120px 121px),
+    var(--ink);
+  color:var(--vellum);
+  font-family:var(--fell);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* ============ MASTHEAD ============ */
+header{
+  flex:0 0 auto;
+  text-align:center;
+  padding:20px 16px 0;
+  position:relative;
+  z-index:5;
+}
+.sigil{
+  font-family:var(--disp);
+  font-weight:900;
+  font-size:clamp(24px,3.4vw,40px);
+  letter-spacing:.14em;
+  color:var(--vellum);
+  text-shadow:0 0 24px rgba(193,145,58,.25);
+}
+.sigil .amp{color:var(--gilt)}
+.motto{
+  font-family:var(--fellsc);
+  font-size:13px;
+  color:var(--gilt);
+  letter-spacing:.28em;
+  margin-top:2px;
+  opacity:.85;
+}
+.rule-orn{
+  width:min(520px,80%);
+  margin:10px auto 0;
+  height:14px;
+  background:
+    linear-gradient(90deg, transparent, var(--gilt-2) 20%, var(--gilt-2) 80%, transparent) center/100% 1px no-repeat;
+  position:relative;
+}
+.rule-orn::after{
+  content:"❖";
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-52%);
+  color:var(--gilt);font-size:13px;background:var(--ink);padding:0 12px;
+}
+
+/* ============ BOOKMARK TABS ============ */
+nav{
+  flex:0 0 auto;
+  display:flex;justify-content:center;gap:14px;
+  padding:0 12px;margin-top:-1px;
+  z-index:4;
+}
+.bkmk{
+  font-family:var(--ui);
+  font-weight:700;font-size:14px;letter-spacing:.18em;
+  color:var(--vellum-3);
+  background:linear-gradient(180deg,#3a2712,#2a1b0b 70%);
+  border:1px solid #513a19;border-top:none;
+  padding:14px 22px 18px;
+  cursor:pointer;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),50% 100%,0 calc(100% - 10px));
+  transform:translateY(-6px);
+  transition:transform .22s cubic-bezier(.2,.9,.3,1.4),color .2s,filter .2s;
+  user-select:none;
+}
+.bkmk:hover{transform:translateY(0);color:var(--vellum)}
+.bkmk:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.bkmk.active{
+  transform:translateY(2px);
+  color:var(--ink);
+  background:linear-gradient(180deg,var(--gilt),#a87c2c 75%);
+  border-color:#e5c476;
+  filter:drop-shadow(0 4px 10px rgba(193,145,58,.35));
+}
+
+/* ============ CAMPAIGN SHELF ============ */
+#shelf{
+  flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  width:min(880px,calc(100% - 28px));margin:12px auto -2px;
+  background:linear-gradient(180deg,#2e1f0d,#241708);
+  border:1px solid #513a19;border-radius:2px;
+  padding:8px 12px;
+  box-shadow:0 6px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+  z-index:3;
+}
+.shelf-lab{font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:.24em;color:var(--gilt)}
+#campSel{
+  font-family:var(--fell);font-size:15px;color:var(--vellum);
+  background:#1c1206;border:1px solid #513a19;border-radius:2px;padding:6px 8px;max-width:200px;
+}
+#campName{
+  flex:1;min-width:140px;font-family:var(--fellsc);font-size:16.5px;letter-spacing:.03em;
+  color:var(--vellum);background:transparent;border:none;border-bottom:1px dashed #6b4d1f;padding:4px 6px;
+}
+#campName::placeholder{color:#7d6335;font-style:italic}
+#campName:focus{outline:none;border-bottom-color:var(--gilt)}
+.shelf-btns{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.sbtn{
+  font-family:var(--ui);font-weight:700;font-size:11.5px;letter-spacing:.14em;
+  color:var(--vellum-3);background:transparent;border:1px solid #6b4d1f;border-radius:2px;
+  padding:6px 10px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+}
+.sbtn:hover{color:var(--ink);background:var(--gilt);border-color:var(--gilt)}
+.sbtn.danger{border-color:#7a2c1c;color:#c96a4f}
+.sbtn.danger:hover,.sbtn.armed{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+#campSel:focus,.sbtn:focus-visible{outline:2px solid var(--gilt);outline-offset:1px}
+
+/* ============ PAGES ============ */
+main{flex:1 1 auto;display:flex;justify-content:center;min-height:0;padding:14px 14px 18px}
+.page{display:none;width:min(880px,100%);min-height:0;flex-direction:column}
+.page.active{display:flex}
+
+/* Parchment panel */
+.parch{
+  background:
+    radial-gradient(160% 90% at 50% 0%, rgba(255,244,214,.5), transparent 55%),
+    radial-gradient(80% 60% at 8% 100%, rgba(90,60,20,.22), transparent 60%),
+    radial-gradient(80% 60% at 95% 96%, rgba(90,60,20,.20), transparent 60%),
+    var(--vellum);
+  color:var(--sepia);
+  border:1px solid #b49a67;
+  outline:1px solid #3c2a10;
+  outline-offset:4px;
+  box-shadow:0 18px 50px rgba(0,0,0,.6), inset 0 0 60px rgba(120,85,35,.22);
+  border-radius:2px;
+  position:relative;
+}
+.parch::before{ /* stitched corners */
+  content:"";position:absolute;inset:8px;pointer-events:none;
+  border:1px dashed rgba(90,60,20,.28);
+}
+
+/* ============ ADVENTURE (CHAT) ============ */
+#tome{flex:1;display:flex;flex-direction:column;min-height:0;padding:26px 0 0}
+#scroll{
+  flex:1;overflow-y:auto;min-height:0;
+  padding:6px 34px 22px;
+  scrollbar-width:thin;scrollbar-color:var(--gilt-2) transparent;
+}
+#scroll::-webkit-scrollbar{width:8px}
+#scroll::-webkit-scrollbar-thumb{background:var(--gilt-2);border-radius:4px}
+
+.entry{margin:0 0 26px;animation:inkfade .5s ease both}
+@keyframes inkfade{from{opacity:0;filter:blur(1.5px)}to{opacity:1;filter:none}}
+@media (prefers-reduced-motion:reduce){.entry{animation:none}}
+
+.rubric{
+  font-family:var(--ui);font-size:12px;font-weight:700;
+  letter-spacing:.3em;margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.rubric::after{content:"";flex:1;height:1px;background:currentColor;opacity:.25}
+.dm .rubric{color:var(--oxblood)}
+.player .rubric{color:var(--verdigris)}
+
+.body-t{font-size:17.5px;line-height:1.62}
+.body-t p{margin:0 0 .7em}
+.body-t p:last-child{margin-bottom:0}
+.body-t h3{
+  font-family:var(--fellsc);font-weight:400;font-size:20px;
+  color:var(--oxblood);letter-spacing:.06em;margin:.6em 0 .35em;
+}
+.body-t strong{color:#33230e}
+.body-t em{font-style:italic}
+.body-t blockquote{
+  border-left:3px double var(--gilt-2);padding-left:12px;margin:.5em 0;
+  font-style:italic;color:#5d4423;
+}
+.body-t ul{margin:.3em 0 .7em 1.3em}
+.body-t li{margin:.2em 0}
+.body-t hr{border:none;border-top:1px solid rgba(90,60,20,.3);margin:.8em 0}
+.player .body-t{font-style:italic;color:#2f4a3d}
+
+/* ===== DICE — the table's shared roll ===== */
+.rollcard{
+  margin:12px 0 4px;border:1px solid #b49a67;
+  background:linear-gradient(180deg, rgba(255,250,235,.75), rgba(236,224,196,.7));
+  border-radius:3px;padding:12px 14px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+.rollcard .what{font-family:var(--ui);font-weight:700;letter-spacing:.06em;font-size:15px;color:var(--sepia);flex:1;min-width:150px}
+.rollcard .what b{color:var(--oxblood)}
+.rollcard .who{display:block;font-family:var(--fell);font-style:italic;font-weight:400;letter-spacing:0;color:var(--sepia-faint);font-size:13.5px}
+.rollcard .mode{font-family:var(--ui);font-size:11px;letter-spacing:.14em;color:var(--verdigris)}
+.rollcard .mode.dis{color:var(--oxblood)}
+.d20btn{
+  border:none;cursor:pointer;font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.08em;
+  color:var(--vellum);background:radial-gradient(circle at 34% 28%, #a3311d, var(--oxblood-2) 78%);
+  width:56px;height:56px;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.35);transition:transform .12s,filter .12s;
+}
+.d20btn:hover{transform:translateY(-1px) scale(1.04);filter:brightness(1.1)}
+.d20btn:active{transform:scale(.94)}
+.d20btn:disabled{cursor:default;filter:grayscale(.4) brightness(.9)}
+.d20btn.rolling{animation:tumble .5s ease}
+@keyframes tumble{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.rollres{
+  display:flex;align-items:center;gap:12px;font-family:var(--ui);
+}
+.rollres .pip{
+  font-family:var(--disp);font-weight:900;font-size:22px;
+  width:52px;height:52px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:#f3e2c0;color:var(--oxblood-2);box-shadow:inset 0 0 0 3px var(--oxblood-2);
+}
+.rollres .pip.crit{box-shadow:inset 0 0 0 3px var(--gilt), 0 0 14px rgba(193,145,58,.6);color:var(--gilt-2)}
+.rollres .pip.fumble{box-shadow:inset 0 0 0 3px #555;color:#444;background:#d8ccb0}
+.rollres .breakdown{font-size:13px;color:var(--sepia)}
+.rollres .breakdown b{font-family:var(--disp);font-size:16px;color:var(--oxblood)}
+.rollres .breakdown small{display:block;color:var(--sepia-faint);letter-spacing:.04em;font-size:11.5px;margin-top:1px}
+
+.ponder{font-style:italic;color:var(--sepia-faint)}
+.ponder::after{content:"…";animation:dots 1.2s steps(3) infinite}
+@keyframes dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}
+
+.errline{color:var(--oxblood);font-family:var(--ui);font-size:14px;letter-spacing:.05em}
+
+/* Session-zero invitation */
+.invite{text-align:center;padding:34px 20px 10px}
+.invite .init{
+  font-family:var(--disp);font-weight:900;font-size:64px;color:var(--oxblood);
+  line-height:1;text-shadow:1px 1px 0 rgba(0,0,0,.15);
+}
+.invite h2{font-family:var(--fellsc);font-weight:400;font-size:24px;margin:6px 0 10px;letter-spacing:.04em}
+.invite p{max-width:56ch;margin:0 auto .6em;line-height:1.6;font-size:16.5px}
+.invite .hint{font-family:var(--ui);font-size:13px;letter-spacing:.12em;color:var(--sepia-faint);margin-top:14px}
+
+/* Quill bar */
+#quill{
+  flex:0 0 auto;display:flex;gap:0;align-items:stretch;
+  border-top:1px solid #b49a67;
+  background:linear-gradient(180deg,var(--vellum-2),var(--vellum-3));
+}
+#quill textarea{
+  flex:1;resize:none;border:none;background:transparent;
+  font-family:var(--fell);font-size:17px;color:var(--sepia);
+  padding:14px 18px;line-height:1.5;max-height:130px;
+}
+#quill textarea::placeholder{color:var(--sepia-faint);font-style:italic}
+#quill textarea:focus{outline:none;box-shadow:inset 0 -2px 0 var(--oxblood)}
+#sendBtn{
+  border:none;cursor:pointer;
+  font-family:var(--ui);font-weight:700;letter-spacing:.2em;font-size:14px;
+  background:var(--oxblood);color:var(--vellum);
+  padding:0 26px;
+  transition:background .15s;
+}
+#sendBtn:hover{background:#96291a}
+#sendBtn:disabled{background:#8a7350;cursor:wait}
+#sendBtn:focus-visible{outline:2px solid var(--gilt);outline-offset:-4px}
+
+/* ============ SHARED FORM STYLE ============ */
+.pad{padding:28px 32px;overflow-y:auto;flex:1;min-height:0;scrollbar-width:thin}
+.sect-title{
+  font-family:var(--fellsc);font-size:23px;color:var(--oxblood);
+  letter-spacing:.05em;margin-bottom:4px;
+}
+.sect-sub{font-size:15px;color:var(--sepia-faint);font-style:italic;margin-bottom:20px}
+label.f{
+  display:block;font-family:var(--ui);font-size:12px;font-weight:700;
+  letter-spacing:.18em;color:var(--gilt-2);margin:12px 0 4px;
+}
+input.f,select.f,textarea.f{
+  width:100%;font-family:var(--fell);font-size:16px;color:var(--sepia);
+  background:rgba(255,250,235,.55);
+  border:1px solid #b49a67;border-radius:2px;
+  padding:8px 10px;
+}
+input.f:focus,select.f:focus,textarea.f:focus{outline:none;border-color:var(--oxblood);box-shadow:0 0 0 1px var(--oxblood)}
+textarea.f{resize:vertical;min-height:64px;line-height:1.5}
+.btn{
+  font-family:var(--ui);font-weight:700;letter-spacing:.16em;font-size:13px;
+  border:1px solid var(--gilt-2);background:transparent;color:var(--sepia);
+  padding:9px 18px;cursor:pointer;border-radius:2px;
+  transition:background .15s,color .15s;
+}
+.btn:hover{background:var(--gilt);color:var(--ink);border-color:var(--gilt)}
+.btn.red{border-color:var(--oxblood);color:var(--oxblood)}
+.btn.red:hover{background:var(--oxblood);color:var(--vellum)}
+.btn:focus-visible{outline:2px solid var(--oxblood);outline-offset:2px}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.row > *{flex:1;min-width:120px}
+
+/* Character sheet cards */
+.sheet{
+  border:1px solid #b49a67;border-radius:2px;
+  background:rgba(255,250,235,.4);
+  padding:18px 20px;margin-bottom:20px;position:relative;
+}
+.sheet::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,var(--oxblood),var(--gilt),var(--verdigris));
+  opacity:.55;
+}
+.abil-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px}
+.abil{
+  text-align:center;border:1px solid #b49a67;border-radius:2px;
+  background:rgba(255,250,235,.55);padding:6px 2px;
+}
+.abil span{display:block;font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--gilt-2)}
+.abil input{
+  width:100%;border:none;background:transparent;text-align:center;
+  font-family:var(--disp);font-size:19px;color:var(--sepia);
+}
+.abil input:focus{outline:none;color:var(--oxblood)}
+.sheet-del{position:absolute;top:10px;right:12px;border:none;background:none;color:var(--oxblood);font-size:18px;cursor:pointer;font-family:var(--fell)}
+.codex-entry{border:1px solid #b49a67;background:rgba(255,250,235,.4);padding:16px 18px;margin-bottom:16px;position:relative}
+.empty-note{font-style:italic;color:var(--sepia-faint);text-align:center;padding:26px 10px}
+
+/* API-key callout */
+.keybox{
+  border:2px solid var(--oxblood);background:rgba(128,31,18,.06);
+  padding:16px 18px;margin-bottom:22px;
+}
+.keybox .kb-t{font-family:var(--ui);font-weight:700;letter-spacing:.2em;font-size:13px;color:var(--oxblood);margin-bottom:6px}
+.keybox p{font-size:14.5px;line-height:1.55;margin-bottom:8px}
+code{font-family:monospace;font-size:.9em;background:rgba(90,60,20,.12);padding:1px 5px;border-radius:2px}
+
+footer{
+  flex:0 0 auto;text-align:center;padding:6px 0 10px;
+  font-family:var(--ui);font-size:11px;letter-spacing:.22em;color:#6d5528;
+}
+
+@media (max-width:640px){
+  #scroll{padding:4px 18px 16px}
+  .pad{padding:20px 16px}
+  .bkmk{padding:12px 12px 16px;font-size:12px;letter-spacing:.1em}
+  .abil-grid{grid-template-columns:repeat(3,1fr)}
+  .invite .init{font-size:48px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sigil">THE <span class="amp">✦</span> ARBITER</div>
+  <div class="motto">AN ORACLE OF DUNGEONS &amp; OF DRAGONS</div>
+  <div class="rule-orn"></div>
+</header>
+
+<nav role="tablist">
+  <button class="bkmk active" data-page="adventure" role="tab">⚔ Adventure</button>
+  <button class="bkmk" data-page="party" role="tab">☙ Party</button>
+  <button class="bkmk" data-page="codex" role="tab">✦ Codex</button>
+  <button class="bkmk" data-page="settings" role="tab">⚙ Sanctum</button>
+</nav>
+
+<div id="shelf">
+  <span class="shelf-lab">⚑ CAMPAIGN</span>
+  <select id="campSel" title="Switch campaign"></select>
+  <input id="campName" placeholder="name this campaign…" title="Rename this campaign" autocomplete="off">
+  <div class="shelf-btns">
+    <button class="sbtn" id="campNew" title="Begin a fresh campaign">＋ NEW</button>
+    <button class="sbtn" id="campExport" title="Save this campaign as a file">⇩ EXPORT</button>
+    <button class="sbtn" id="campImport" title="Load a campaign file from another device">⇧ IMPORT</button>
+    <button class="sbtn danger" id="campDel" title="Delete this campaign">✕ DELETE</button>
+  </div>
+  <input type="file" id="campFile" accept=".json,application/json" style="display:none">
+</div>
+
+<main>
+
+  <!-- ==================== ADVENTURE ==================== -->
+  <section class="page active parch" id="page-adventure">
+    <div id="tome">
+      <div id="scroll" aria-live="polite"></div>
+      <div id="quill">
+        <textarea id="input" rows="1" placeholder="Say what you do, in plain words — the Dungeon Master handles everything else. (Enter to send)"></textarea>
+        <button id="sendBtn">SEND</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PARTY ==================== -->
+  <section class="page parch" id="page-party">
+    <div class="pad">
+      <div class="sect-title">The Adventuring Party</div>
+      <div class="sect-sub">Every sheet inscribed here is read by the Dungeon Master before each reply. It is the law of your character.</div>
+      <div id="sheetList"></div>
+      <button class="btn" id="addSheet">＋ Inscribe a new character</button>
+    </div>
+  </section>
+
+  <!-- ==================== CODEX ==================== -->
+  <section class="page parch" id="page-codex">
+    <div class="pad">
+      <div class="sect-title">The Codex</div>
+      <div class="sect-sub">World primers, house rules, homebrew items, faction notes, session recaps — anything filed here becomes part of the DM's memory.</div>
+      <div id="codexList"></div>
+      <button class="btn" id="addCodex">＋ Add a codex entry</button>
+    </div>
+  </section>
+
+  <!-- ==================== SETTINGS ==================== -->
+  <section class="page parch" id="page-settings">
+    <div class="pad">
+      <div class="sect-title">The Sanctum</div>
+      <div class="sect-sub">The machinery behind the curtain.</div>
+
+      <div class="keybox">
+        <div class="kb-t">⚿ ANTHROPIC API KEY — INSERT HERE</div>
+        <p><strong>Running inside Claude.ai:</strong> leave this field empty — requests are handled for you automatically.</p>
+        <p><strong>Running on GitHub Pages (or any static host):</strong> paste your own key below. Get one at <code>console.anthropic.com</code> → API Keys. The key lives only in this browser and is sent only to <code>api.anthropic.com</code>.</p>
+        <label class="f" for="apiKey">API KEY</label>
+        <input class="f" type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off">
+      </div>
+
+      <div class="row">
+        <div>
+          <label class="f" for="model">MODEL</label>
+          <select class="f" id="model">
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recommended)</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (faster, cheaper)</option>
+            <option value="claude-opus-4-8">Claude Opus 4.8 (deepest)</option>
+          </select>
+        </div>
+        <div>
+          <label class="f" for="edition">RULES EDITION</label>
+          <input class="f" id="edition" value="D&D 5th Edition (SRD 5.1)">
+        </div>
+        <div>
+          <label class="f" for="tone">CAMPAIGN TONE</label>
+          <select class="f" id="tone">
+            <option>Classic high fantasy</option>
+            <option>Grimdark and grounded</option>
+            <option>Whimsical and comedic</option>
+            <option>Horror and dread</option>
+            <option>Political intrigue</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="f" for="lines">LINES &amp; VEILS (content the DM must avoid or fade past)</label>
+      <textarea class="f" id="lines" placeholder="e.g. no harm to animals; fade to black on torture…"></textarea>
+
+      <p style="margin-top:18px;font-size:14px;color:var(--sepia-faint);font-style:italic">
+        Rules edition, tone, and lines &amp; veils belong to the <strong>current campaign</strong>; the key and model belong to this device.
+        Campaigns auto-save in this browser. To carry a saga between devices, use ⇩ EXPORT on the campaign bar above,
+        then ⇧ IMPORT the file on the other device — it arrives as its own campaign, story and party intact. Deleting asks twice; exports never contain your key.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>THE TABLE IS SET · THE CANDLES ARE LIT</footer>
+
+<script>
+/* ================================================================
+   STATE
+================================================================ */
+const blankSheet = () => ({
+  name:"", concept:"", ac:"", hpCur:"", hpMax:"", speed:"",
+  str:"10", dex:"10", con:"10", int:"10", wis:"10", cha:"10",
+  skills:"", inventory:"", spells:"", notes:""
+});
+const blankCodex = () => ({ title:"", body:"" });
+
+const freshCampaign = (name) => ({
+  id: "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+  name: name||"Untitled Campaign",
+  created: new Date().toISOString(),
+  messages: [], sheets: [], codex: [],
+  settings: { edition:"D&D 5th Edition (SRD 5.1)", tone:"Classic high fantasy", lines:"" }
+});
+
+/* The vault holds every campaign; `state` always points at the active one. */
+let vault = { activeId:null, global:{ apiKey:"", model:"claude-sonnet-4-6" }, campaigns:[] };
+let state = null;
+
+/* Guarded persistence: works on GitHub Pages; silently inert where storage is unavailable */
+function persist(){ try{ localStorage.setItem("arbiter-vault", JSON.stringify(vault)); }catch(e){} }
+function restore(){
+  try{
+    const raw = localStorage.getItem("arbiter-vault");
+    if(raw){
+      const v = JSON.parse(raw);
+      if(v && Array.isArray(v.campaigns)){
+        vault = v;
+        vault.global = Object.assign({apiKey:"",model:"claude-sonnet-4-6"}, v.global||{});
+      }
+    } else {
+      const old = localStorage.getItem("arbiter-campaign");   // migrate v1 single-campaign saves
+      if(old){
+        const s = JSON.parse(old);
+        const c = freshCampaign("First Campaign");
+        c.messages = s.messages||[]; c.sheets = s.sheets||[]; c.codex = s.codex||[];
+        c.settings.edition = s.settings?.edition || c.settings.edition;
+        c.settings.tone    = s.settings?.tone    || c.settings.tone;
+        c.settings.lines   = s.settings?.lines   || "";
+        vault.global.apiKey = s.settings?.apiKey || "";
+        vault.global.model  = s.settings?.model  || vault.global.model;
+        vault.campaigns.push(c); vault.activeId = c.id;
+        localStorage.removeItem("arbiter-campaign");
+      }
+    }
+  }catch(e){}
+  if(!vault.campaigns.length){
+    const c = freshCampaign("First Campaign");
+    vault.campaigns.push(c); vault.activeId = c.id;
+  }
+  state = vault.campaigns.find(c=>c.id===vault.activeId) || vault.campaigns[0];
+  vault.activeId = state.id;
+  persist();
+}
+restore();
+
+/* ================================================================
+   DM SYSTEM PROMPT — the "fine-tuning" layer
+================================================================ */
+const SRD_REF = `
+CORE RULES QUICK REFERENCE (authoritative for adjudication):
+• Checks: d20 + ability modifier + proficiency (if proficient) vs DC. Modifier = floor((score−10)/2). DC ladder: 5 trivial, 10 easy, 15 moderate, 20 hard, 25 very hard, 30 nearly impossible.
+• Advantage/Disadvantage: roll 2d20 take higher/lower; they don't stack; one of each cancels to a straight roll.
+• Combat round ≈ 6 s. Turn = move + one action + possible bonus action + one reaction per round + free object interaction. Actions: Attack, Cast a Spell, Dash, Disengage, Dodge, Help, Hide, Ready, Search, Use an Object.
+• Attack: d20 + mods vs AC. Natural 20 = hit + double damage dice (crit). Natural 1 = miss. Unseen attacker: advantage; attacking unseen target: disadvantage. Ranged in melee: disadvantage.
+• Cover: half +2 AC/DEX saves, three-quarters +5, total = untargetable.
+• Damage at 0 HP: unconscious + death saves (d20: 10+ success, 3 successes stable, 3 failures dead; nat 20 = regain 1 HP; nat 1 = 2 failures; damage while down = 1 failure, crit = 2). Massive damage (remaining ≥ max HP) = instant death.
+• Conditions: blinded, charmed, deafened, frightened (disadv. on checks/attacks while source in sight; can't willingly approach), grappled (speed 0), incapacitated, invisible, paralyzed (auto-crit within 5 ft), petrified, poisoned (disadv. attacks/checks), prone (melee adv. against, ranged disadv. against; own attacks disadv.), restrained, stunned, unconscious, exhaustion 1–6.
+• Saves: d20 + ability mod + proficiency if proficient, vs DC (spell DC = 8 + prof + casting mod).
+• Rests: short (≥1 h, spend Hit Dice), long (≥8 h, restore HP, half Hit Dice, spell slots).
+• Concentration: one spell at a time; taking damage → CON save DC 10 or half damage, whichever higher.
+• Opportunity attacks: leaving reach without Disengage provokes one reaction attack.
+• Skills by ability — STR: Athletics · DEX: Acrobatics, Sleight of Hand, Stealth · INT: Arcana, History, Investigation, Nature, Religion · WIS: Animal Handling, Insight, Medicine, Perception, Survival · CHA: Deception, Intimidation, Performance, Persuasion.`;
+
+function buildSystem(){
+  const s = state.settings;
+  const sheets = state.sheets.filter(x=>x.name.trim()).map(x=>
+`— ${x.name} (${x.concept||"adventurer"}) · AC ${x.ac||"?"} · HP ${x.hpCur||"?"}/${x.hpMax||"?"} · Speed ${x.speed||"30 ft"}
+   STR ${x.str} DEX ${x.dex} CON ${x.con} INT ${x.int} WIS ${x.wis} CHA ${x.cha}
+   Proficiencies/skills: ${x.skills||"—"}
+   Inventory: ${x.inventory||"—"}
+   Spells/features: ${x.spells||"—"}
+   Notes: ${x.notes||"—"}`).join("\n");
+  const codex = state.codex.filter(c=>c.title.trim()||c.body.trim())
+    .map(c=>`### ${c.title||"Untitled"}\n${c.body}`).join("\n\n");
+
+  return `You're the Dungeon Master for a group of friends who are new to D&D. Keep a clear, natural, balanced tone — competent and easy to follow, never theatrical or over-dramatic, and never forced-casual either. You're a good referee and narrator who keeps the game moving. You're running ${s.edition} in a "${s.tone}" style.
+
+HOW YOU WRITE
+- Plain and clear. Describe scenes and outcomes in straightforward prose. No purple descriptions, no dramatic flourishes, no fake-casual slang or forced jokes — just tell them what's happening, with a concrete detail or two.
+- Keep it concise. Usually two to four sentences. Lead with what matters, then stop.
+- Don't end every turn with a menu of options — that reads as robotic. Usually just describe the situation and ask what they want to do. Offer a suggestion or two only when someone seems genuinely stuck.
+- Give NPCs distinct voices and put their dialogue in quotes; let them be people, not quest-dispensers.
+- Never decide your players' actions, choices, or dialogue for them. Set the scene, then wait for them.
+
+THIS IS D&D — THE DICE DECIDE
+- When someone tries something with real stakes and a real chance of failing, call for a roll. Skip rolls for the trivial (opening an unlocked door) and the impossible — only roll when the outcome's actually in question. Don't roll for everything; don't roll for nothing.
+- To ask for a roll, work out the math yourself and drop a tag on its OWN LINE, then STOP — do not write what happens next, do not narrate the outcome. Wait for the result:
+  [[ROLL type="Stealth check" who="Kara" mod="+5" dc="15" mode="normal"]]
+  * type — the check, save, or attack: "Perception check", "Dexterity save", "Attack — shortsword", "Persuasion check"
+  * who — the character's name; for a group check ("everyone stay quiet") drop one tag per person
+  * mod — the total bonus you figured from their sheet (pick a fair one if they have no sheet: about +5 if they're great at it, +3 good, +0 average, -1 bad). Players never do math.
+  * dc — your SECRET target number they don't see (for an attack this is the enemy's AC; for a save it's the effect's DC). Leave it out only if the roll is pure color.
+  * mode — "advantage" (roll twice keep the best), "disadvantage" (keep the worst), or "normal", depending on the fiction.
+  The table taps the die to roll; you get the number back, then you narrate what it means. Let the dice genuinely decide — high rolls go well, low rolls go badly, and sometimes the party simply fails. That's expected. Treat natural 20s as a notable success and natural 1s as a notable setback.
+- Combat: call for attack rolls and saves with the tag. Describe damage and wounds in plain words ("that opens a gash across its flank, and it's slowing down") — don't recite hit-point numbers. Keep it fast and cinematic, one clear beat at a time. When a character is downed, prefer an interesting turn — captured, dragged to safety, a rival intervenes — over an abrupt "you die."
+- NEVER fake a roll or decide its result before the die lands. If you catch yourself about to say "you succeed" before asking for the check — stop, ask for the check.
+
+WHEN PLAYERS DO SOMETHING UNEXPECTED
+- Go with it. Players trying things you didn't plan for is a normal part of the game, not a problem. Never freeze, never say "you can't do that," and never step out of character to explain rules or limits.
+- Use "yes, and" or "no, but" rather than a flat no. If an idea is clever, let it work (Rule of Cool). If the outcome is uncertain, call for a check and let the dice decide. If it's genuinely impossible in the world, let the world respond naturally — a guard refuses, the wall holds — inside the fiction, not as an out-of-character explanation.
+- If you're unsure of a rule or a piece of lore, don't stall and don't state a wrong answer confidently — quietly look it up (web search) or make a fair, quick call and keep the game moving.
+
+BEGINNER TABLE
+- Assume zero experience. Players never track numbers, do their own math, or name rules — you handle all of it behind the curtain. Explain a rule only in one quick sentence, only right when it comes up.
+- No character yet? Offer a few ready-made ones in plain fantasy terms (the tough knight, the sneaky one who picks locks, the wizard who casts spells) or build one together with two or three fun questions — never a stat questionnaire. Then tell them to jot it in the Party tab so you'll remember it.
+- If someone goes quiet or seems unsure, give them an easy in-character opening to step in. Keep everyone involved.
+
+KEEPING IT STRAIGHT
+- The world stays consistent — names, places, promises, wounds, gold, who's holding what. Slip up? Just fix it naturally and move on.
+- The character sheets below are the truth about the party. When something changes (took a hit, found loot, spent gold), mention it once in passing so they can update their sheet.
+- Respect these lines & veils no matter what: ${s.lines.trim()||"(none set — just fade to black on anything gratuitous)"}. Steer around them smoothly, in the story.
+
+NAMING — MAKE EVERYTHING UNIQUE
+Every name you invent (places, people, taverns, factions, items, gods) must be genuinely distinctive, not the generic fantasy default. This matters a lot; ordinary names make the whole world feel canned.
+- BANNED outright: the words ashen, grey/gray, old, whisper/whispering, veil, vale, moor, hollow, thorn, gloom, shadow, mist, ember, raven, black-/-fell, -wood/-woods, -haven, -reach, -fall, -crest, -watch, -hold, -mere, -wick as name components; and the "Adjective + Nature-Noun" template itself (Whispering Woods, Ashen Moor, Grey Roads, Silent Peaks). If a name you're about to write follows that pattern or uses those words, discard it and make another.
+- No alliteration, no personified-nature phrasing, no melancholy-mood-word filler. Avoid anything you'd expect to see in a stock fantasy name generator.
+- Instead, build names one of these ways: (a) invent a short fictional language with its own consistent sounds and derive names from it (e.g. a region where names favor hard consonants and -ok/-ushka endings); (b) name things after concrete in-world facts — who founded it, what happened there, what's made or mined there, a local animal or crop; (c) borrow phonetics from a real but less-mined language family (Basque, Finnish, Nahuatl, Georgian, Welsh, Malay) and reshape them so they're original, never copied. Keep them pronounceable and fitting the "${s.tone}" tone.
+- Give recurring names a one-line reason for existing when it's natural ("Tavriz — named for the salt-trader who drowned building the causeway"). Deliberately vary your choices: pick unexpected sounds, uneven syllable counts, names that don't rhyme or pattern-match each other. Variety across the world matters as much as any single name.
+
+Formatting: light touch. Plain paragraphs, NPC dialogue in quotes, maybe an occasional **bold name**. No headers, no bullet-point lists, no stage directions, no section labels. Just talk like a person at the table.
+
+The rules below are your private cheat-sheet for making fair calls and picking DCs — never quote them at the players.
+${SRD_REF}
+
+${sheets ? "THE PARTY — canonical, this is who they are and what they can do:\n"+sheets : "THE PARTY: no sheets yet. Help them make characters the easy way above, and improvise fair bonuses until they do."}
+
+${codex ? "THE CAMPAIGN SO FAR — canonical notes the table has filed:\n"+codex : ""}`;
+}
+
+/* ================================================================
+   MARKDOWN-LITE
+================================================================ */
+function escapeHTML(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function md(src){
+  const lines = escapeHTML(src).split("\n");
+  let out = [], para = [], inList = false;
+  const flush = ()=>{ if(para.length){ out.push("<p>"+para.join("<br>")+"</p>"); para=[] } };
+  const closeList = ()=>{ if(inList){ out.push("</ul>"); inList=false } };
+  for(let ln of lines){
+    const t = ln.trim();
+    if(!t){ flush(); closeList(); continue }
+    if(t.startsWith("###")){ flush(); closeList(); out.push("<h3>"+t.replace(/^#+\s*/,"")+"</h3>"); continue }
+    if(t.startsWith("&gt;")){ flush(); closeList(); out.push("<blockquote>"+inline(t.replace(/^&gt;\s?/,""))+"</blockquote>"); continue }
+    if(/^[-*•]\s+/.test(t)){ flush(); if(!inList){out.push("<ul>");inList=true} out.push("<li>"+inline(t.replace(/^[-*•]\s+/,""))+"</li>"); continue }
+    if(/^-{3,}$/.test(t)){ flush(); closeList(); out.push("<hr>"); continue }
+    closeList(); para.push(inline(t));
+  }
+  flush(); closeList();
+  return out.join("");
+  function inline(s){
+    return s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>")
+            .replace(/\*([^*]+)\*/g,"<em>$1</em>");
+  }
+}
+
+/* ================================================================
+   CHAT RENDERING
+================================================================ */
+const scrollEl = document.getElementById("scroll");
+const rubricFor = {dm:"DUNGEON MASTER", player:"THE TABLE", note:"THE SCRIBE"};
+
+/* ---- DICE ---- */
+function d20(){ return 1 + Math.floor(Math.random()*20); }
+function computeRoll(roll){
+  const mode = (roll.mode||"normal").toLowerCase();
+  const mod = parseInt(String(roll.mod==null?0:roll.mod).replace(/[^0-9+\-]/g,""),10) || 0;
+  let a = d20(), b = d20(), nat, pair = null;
+  if(mode.startsWith("adv")){ nat = Math.max(a,b); pair=[a,b]; }
+  else if(mode.startsWith("dis")){ nat = Math.min(a,b); pair=[a,b]; }
+  else { nat = a; }
+  const dc = (roll.dc===undefined || roll.dc==="" || roll.dc==null) ? null : parseInt(roll.dc,10);
+  const total = nat + mod;
+  return { nat, mod, total, pair,
+           mode: mode.startsWith("adv")?"advantage":mode.startsWith("dis")?"disadvantage":"normal",
+           dc: isNaN(dc)?null:dc, crit: nat===20, fumble: nat===1,
+           outcome: (dc==null||isNaN(dc)) ? null : (total>=dc ? "success":"fail") };
+}
+/* Pull [[ROLL ...]] tags out of a DM reply → {narration, rolls[]} */
+function parseRolls(text){
+  const tag = /\[\[\s*ROLL\b([^\]]*)\]\]/gi;
+  const rolls = [];
+  const attr = (blob,key)=>{
+    let m = blob.match(new RegExp(key+'\\s*=\\s*"([^"]*)"','i'))
+         || blob.match(new RegExp(key+"\\s*=\\s*'([^']*)'",'i'))
+         || blob.match(new RegExp(key+'\\s*=\\s*([^\\s\\]]+)','i'));
+    return m ? m[1].trim() : "";
+  };
+  let narration = text.replace(tag,(_,blob)=>{
+    rolls.push({ type:attr(blob,"type")||"Check", who:attr(blob,"who"),
+                 mod:attr(blob,"mod")||"0", dc:attr(blob,"dc"),
+                 mode:attr(blob,"mode")||"normal", result:null });
+    return "";
+  }).replace(/\n{3,}/g,"\n\n").trim();
+  return { narration, rolls };
+}
+function rollResultLine(roll){
+  const r = roll.result;
+  const dice = r.pair ? `d20 [${r.pair.join(", ")}] keep ${r.nat} (${r.mode})` : `d20 ${r.nat}`;
+  const modS = (r.mod>=0?"+":"")+r.mod;
+  let s = `${roll.who||"They"} — ${roll.type}: ${dice}, ${modS} = ${r.total}`;
+  if(r.dc!=null) s += `, vs DC ${r.dc} => ${r.outcome.toUpperCase()}`;
+  if(r.crit) s += " [NATURAL 20!]";
+  if(r.fumble) s += " [NATURAL 1!]";
+  return s;
+}
+
+/* ---- RENDER ---- */
+function rollCardHTML(roll, mi, ri){
+  const r = roll.result;
+  const modS = ((parseInt(String(roll.mod).replace(/[^0-9+\-]/g,""),10)||0)>=0?"+":"")
+             + (parseInt(String(roll.mod).replace(/[^0-9+\-]/g,""),10)||0);
+  const modeBadge = /adv/i.test(roll.mode) ? `<span class="mode">advantage</span>`
+                  : /dis/i.test(roll.mode) ? `<span class="mode dis">disadvantage</span>` : "";
+  const who = roll.who ? `<span class="who">${escapeHTML(roll.who)}</span>` : "";
+  if(!r){
+    return `<div class="rollcard" data-mi="${mi}" data-ri="${ri}">
+      <div class="what"><b>${escapeHTML(roll.type)}</b> ${modeBadge}${who}<span class="who">bonus ${modS} · tap to roll</span></div>
+      <button class="d20btn roll-go" data-mi="${mi}" data-ri="${ri}" aria-label="Roll the d20">d20</button>
+    </div>`;
+  }
+  const pipCls = r.crit?"pip crit":r.fumble?"pip fumble":"pip";
+  const kept = r.pair ? `<small>rolled ${r.pair.join(" & ")} · kept ${r.nat} (${r.mode})</small>` : "";
+  const flag = r.crit?`<small>Natural 20 — critical success.</small>`:r.fumble?`<small>Natural 1 — critical failure.</small>`:"";
+  return `<div class="rollcard" data-mi="${mi}" data-ri="${ri}">
+    <div class="what"><b>${escapeHTML(roll.type)}</b>${who}</div>
+    <div class="rollres">
+      <div class="${pipCls}">${r.nat}</div>
+      <div class="breakdown">d20 ${r.nat} ${(r.mod>=0?"+ ":"− ")+Math.abs(r.mod)} = <b>${r.total}</b>${kept}${flag}</div>
+    </div>
+  </div>`;
+}
+function renderAll(){
+  scrollEl.innerHTML = "";
+  if(!state.messages.length){
+    scrollEl.innerHTML = `<div class="invite">
+      <div class="init">N</div>
+      <h2>o experience required.</h2>
+      <p>Tell the DM what kind of world you want — a haunted swamp, a city of thieves, "surprise me," whatever. Then just say what your character tries to do, in plain words. No rulebook, no math.</p>
+      <p>When something's risky, the DM will ask for a roll — you tap the die, and the number decides how it goes. That's the whole game.</p>
+      <div class="hint">NO CHARACTER YET? JUST START — THE DM WILL WALK YOU THROUGH IT · SHEETS UNDER ☙ PARTY · KEY &amp; DIALS UNDER ⚙ SANCTUM</div>
+    </div>`;
+    return;
+  }
+  state.messages.forEach((m,i)=>scrollEl.appendChild(entryEl(m,i)));
+  scrollEl.scrollTop = scrollEl.scrollHeight;
+}
+function entryEl(m, mi){
+  const d = document.createElement("div");
+  d.className = "entry "+m.role;
+  let inner = `<div class="rubric">${rubricFor[m.role]||""}</div>`;
+  if(m.text) inner += `<div class="body-t">${md(m.text)}</div>`;
+  if(m.rolls && m.rolls.length){
+    inner += `<div class="rolls">`+m.rolls.map((r,ri)=>rollCardHTML(r,mi,ri)).join("")+`</div>`;
+  }
+  d.innerHTML = inner;
+  return d;
+}
+function pushMsg(m){ state.messages.push(m); scrollEl.appendChild(entryEl(m, state.messages.length-1)); scrollEl.scrollTop = scrollEl.scrollHeight; persist(); return state.messages.length-1; }
+
+/* click a die → roll it, repaint, and if the whole batch is done, let the DM react */
+scrollEl.addEventListener("click", e=>{
+  const btn = e.target.closest(".roll-go");
+  if(!btn || btn.disabled) return;
+  const mi = +btn.dataset.mi, ri = +btn.dataset.ri;
+  const msg = state.messages[mi]; if(!msg || !msg.rolls || !msg.rolls[ri]) return;
+  const roll = msg.rolls[ri];
+  if(roll.result) return;
+  btn.classList.add("rolling"); btn.disabled = true;
+  setTimeout(()=>{
+    roll.result = computeRoll(roll);
+    persist();
+    const card = scrollEl.querySelector(`.rollcard[data-mi="${mi}"][data-ri="${ri}"]`);
+    if(card) card.outerHTML = rollCardHTML(roll, mi, ri);
+    if(msg.rolls.every(r=>r.result)) continueAfterRolls(mi);
+  }, 480);
+});
+function continueAfterRolls(mi){
+  const msg = state.messages[mi];
+  msg.resultsSent = true;   // marks that a dice-result user-turn should follow this dm message
+  persist();
+  callDM();
+}
+
+/* ================================================================
+   API
+================================================================ */
+function apiHistory(){
+  const hist = [];
+  for(const m of state.messages){
+    if(m.role==="dm"){
+      hist.push({role:"assistant", content:(m.raw||m.text||"").trim() || "(...)"});
+      if(m.rolls && m.rolls.length && m.rolls.every(r=>r.result)){
+        const lines = m.rolls.map(rollResultLine).join("\n");
+        hist.push({role:"user", content:"[DICE RESULTS — these are what the table just rolled; narrate what happens, and don't ask for a re-roll]\n"+lines});
+      }
+    }
+    else if(m.role==="player") hist.push({role:"user", content:m.text});
+  }
+  const merged = [];
+  for(const h of hist){
+    if(merged.length && merged[merged.length-1].role===h.role) merged[merged.length-1].content += "\n\n"+h.content;
+    else merged.push({...h});
+  }
+  let win = merged.slice(-44);
+  while(win.length && win[0].role!=="user") win.shift();
+  return win;
+}
+
+async function callDM(){
+  const btn = document.getElementById("sendBtn");
+  btn.disabled = true;
+  const ponder = document.createElement("div");
+  ponder.className = "entry dm";
+  ponder.innerHTML = `<div class="rubric">DUNGEON MASTER</div><div class="body-t ponder">thinking</div>`;
+  scrollEl.appendChild(ponder); scrollEl.scrollTop = scrollEl.scrollHeight;
+
+  try{
+    const headers = {"Content-Type":"application/json"};
+    const key = (vault.global.apiKey||"").trim();
+    if(key){
+      headers["x-api-key"] = key;                                  /* ← API KEY IS ATTACHED HERE */
+      headers["anthropic-version"] = "2023-06-01";
+      headers["anthropic-dangerous-direct-browser-access"] = "true";
+    }
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST", headers,
+      body:JSON.stringify({
+        model: vault.global.model,
+        max_tokens: 1000,
+        system: buildSystem(),
+        messages: apiHistory(),
+        tools: [{type:"web_search_20250305", name:"web_search", max_uses:3}]
+      })
+    });
+    const data = await res.json();
+    ponder.remove();
+    if(data.error) throw new Error(data.error.message||"API error");
+    const raw = (data.content||[]).map(b=>b.type==="text"?b.text:"").filter(Boolean).join("\n").trim();
+    if(!raw) throw new Error("Empty reply from the model.");
+    const {narration, rolls} = parseRolls(raw);
+    pushMsg({role:"dm", text:narration, raw, rolls});
+    /* if rolls were requested, we STOP here and wait for the table to tap the dice */
+  }catch(err){
+    ponder.remove();
+    const d = document.createElement("div");
+    d.className = "entry";
+    d.innerHTML = `<div class="body-t errline">⚠ Couldn't reach the DM: ${escapeHTML(err.message)}.
+      ${(vault.global.apiKey||"").trim()?"":"If you're running this outside Claude.ai, add your API key in the ⚙ Sanctum tab."}</div>`;
+    scrollEl.appendChild(d);
+  }
+  btn.disabled = false;
+}
+
+/* ================================================================
+   INPUT
+================================================================ */
+const input = document.getElementById("input");
+function send(){
+  const t = input.value.trim();
+  if(!t) return;
+  input.value = ""; input.style.height = "auto";
+  pushMsg({role:"player", text:t});
+  callDM();
+}
+document.getElementById("sendBtn").addEventListener("click",send);
+input.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
+input.addEventListener("input",()=>{ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,130)+"px"; });
+
+/* ================================================================
+   TABS
+================================================================ */
+document.querySelectorAll(".bkmk").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".bkmk").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.getElementById("page-"+b.dataset.page).classList.add("active");
+}));
+
+/* ================================================================
+   PARTY TAB
+================================================================ */
+const sheetList = document.getElementById("sheetList");
+const ABIL = ["str","dex","con","int","wis","cha"];
+function renderSheets(){
+  sheetList.innerHTML = "";
+  if(!state.sheets.length){ sheetList.innerHTML = `<div class="empty-note">No heroes inscribed yet. The Arbiter will improvise until you do.</div>`; }
+  state.sheets.forEach((sh,i)=>{
+    const el = document.createElement("div");
+    el.className = "sheet";
+    el.innerHTML = `
+      <button class="sheet-del" title="Strike from the record" data-i="${i}">✕</button>
+      <div class="row">
+        <div><label class="f">NAME</label><input class="f" data-k="name" data-i="${i}" value="${escapeHTML(sh.name)}"></div>
+        <div><label class="f">CLASS · LEVEL · ANCESTRY</label><input class="f" data-k="concept" data-i="${i}" value="${escapeHTML(sh.concept)}" placeholder="Rogue 3, Wood Elf"></div>
+      </div>
+      <div class="row">
+        <div><label class="f">ARMOR CLASS</label><input class="f" data-k="ac" data-i="${i}" value="${escapeHTML(sh.ac)}"></div>
+        <div><label class="f">HP CURRENT</label><input class="f" data-k="hpCur" data-i="${i}" value="${escapeHTML(sh.hpCur)}"></div>
+        <div><label class="f">HP MAX</label><input class="f" data-k="hpMax" data-i="${i}" value="${escapeHTML(sh.hpMax)}"></div>
+        <div><label class="f">SPEED</label><input class="f" data-k="speed" data-i="${i}" value="${escapeHTML(sh.speed)}" placeholder="30 ft"></div>
+      </div>
+      <label class="f">ABILITY SCORES</label>
+      <div class="abil-grid">${ABIL.map(a=>`<div class="abil"><span>${a.toUpperCase()}</span><input data-k="${a}" data-i="${i}" value="${escapeHTML(sh[a])}"></div>`).join("")}</div>
+      <label class="f">PROFICIENCIES &amp; SKILLS</label><textarea class="f" data-k="skills" data-i="${i}" placeholder="Stealth +5, Perception +3, thieves' tools…">${escapeHTML(sh.skills)}</textarea>
+      <label class="f">INVENTORY &amp; GOLD</label><textarea class="f" data-k="inventory" data-i="${i}">${escapeHTML(sh.inventory)}</textarea>
+      <label class="f">SPELLS &amp; FEATURES</label><textarea class="f" data-k="spells" data-i="${i}">${escapeHTML(sh.spells)}</textarea>
+      <label class="f">NOTES &amp; BACKSTORY</label><textarea class="f" data-k="notes" data-i="${i}">${escapeHTML(sh.notes)}</textarea>`;
+    sheetList.appendChild(el);
+  });
+}
+sheetList.addEventListener("input",e=>{
+  const {k,i} = e.target.dataset; if(k===undefined) return;
+  state.sheets[i][k] = e.target.value; persist();
+});
+sheetList.addEventListener("click",e=>{
+  if(e.target.classList.contains("sheet-del")){
+    state.sheets.splice(e.target.dataset.i,1); persist(); renderSheets();
+  }
+});
+document.getElementById("addSheet").addEventListener("click",()=>{ state.sheets.push(blankSheet()); persist(); renderSheets(); });
+
+/* ================================================================
+   CODEX TAB
+================================================================ */
+const codexList = document.getElementById("codexList");
+function renderCodex(){
+  codexList.innerHTML = "";
+  if(!state.codex.length){ codexList.innerHTML = `<div class="empty-note">The codex lies empty — blank vellum awaiting your world.</div>`; }
+  state.codex.forEach((c,i)=>{
+    const el = document.createElement("div");
+    el.className = "codex-entry";
+    el.innerHTML = `
+      <button class="sheet-del" data-i="${i}">✕</button>
+      <label class="f">TITLE</label><input class="f" data-k="title" data-i="${i}" value="${escapeHTML(c.title)}" placeholder="House rules · The Kingdom of Veyr · Session 3 recap…">
+      <label class="f">CONTENT</label><textarea class="f" data-k="body" data-i="${i}" style="min-height:110px">${escapeHTML(c.body)}</textarea>`;
+    codexList.appendChild(el);
+  });
+}
+codexList.addEventListener("input",e=>{
+  const {k,i} = e.target.dataset; if(k===undefined) return;
+  state.codex[i][k] = e.target.value; persist();
+});
+codexList.addEventListener("click",e=>{
+  if(e.target.classList.contains("sheet-del")){ state.codex.splice(e.target.dataset.i,1); persist(); renderCodex(); }
+});
+document.getElementById("addCodex").addEventListener("click",()=>{ state.codex.push(blankCodex()); persist(); renderCodex(); });
+
+/* ================================================================
+   SETTINGS TAB
+================================================================ */
+const S = id => document.getElementById(id);
+function loadSettings(){
+  S("apiKey").value = vault.global.apiKey;
+  S("model").value  = vault.global.model;
+  S("edition").value = state.settings.edition;
+  S("tone").value    = state.settings.tone;
+  S("lines").value   = state.settings.lines;
+}
+["apiKey","model"].forEach(id=>{
+  S(id).addEventListener("input",()=>{ vault.global[id] = S(id).value; persist(); });
+});
+["edition","tone","lines"].forEach(id=>{
+  S(id).addEventListener("input",()=>{ state.settings[id] = S(id).value; persist(); });
+});
+
+/* ================================================================
+   CAMPAIGN SHELF — switch · rename · new · delete · export · import
+================================================================ */
+function renderShelf(){
+  S("campSel").innerHTML = vault.campaigns
+    .map(c=>`<option value="${c.id}" ${c.id===state.id?"selected":""}>${escapeHTML(c.name||"Untitled")}</option>`).join("");
+  S("campName").value = state.name;
+  disarmDelete();
+}
+function activate(id){
+  const c = vault.campaigns.find(x=>x.id===id); if(!c) return;
+  state = c; vault.activeId = id; persist();
+  renderShelf(); renderAll(); renderSheets(); renderCodex(); loadSettings();
+}
+S("campSel").addEventListener("change",e=>activate(e.target.value));
+S("campName").addEventListener("input",()=>{
+  state.name = S("campName").value; persist();
+  const o = S("campSel").querySelector(`option[value="${state.id}"]`);
+  if(o) o.textContent = state.name||"Untitled";
+});
+S("campNew").addEventListener("click",()=>{
+  const c = freshCampaign("Campaign "+(vault.campaigns.length+1));
+  vault.campaigns.push(c); activate(c.id);
+});
+
+/* Two-step delete: first press arms the button, second press within 3.5 s confirms */
+let delArm = null, delTimer = null;
+function disarmDelete(){
+  delArm = null; clearTimeout(delTimer);
+  const b = S("campDel"); b.textContent = "✕ DELETE"; b.classList.remove("armed");
+}
+S("campDel").addEventListener("click",()=>{
+  const b = S("campDel");
+  if(delArm !== state.id){
+    delArm = state.id; b.textContent = "SURE? PRESS AGAIN"; b.classList.add("armed");
+    clearTimeout(delTimer); delTimer = setTimeout(disarmDelete, 3500);
+    return;
+  }
+  disarmDelete();
+  vault.campaigns = vault.campaigns.filter(c=>c.id!==state.id);
+  if(!vault.campaigns.length) vault.campaigns.push(freshCampaign("First Campaign"));
+  activate(vault.campaigns[0].id);
+});
+
+/* Export: a self-describing file this same app re-imports fluidly. Never includes the API key. */
+function exportCampaign(){
+  const payload = { app:"arbiter-dm", format:2, exported:new Date().toISOString(), campaign: state };
+  const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = ((state.name||"campaign").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"campaign")+".arbiter.json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+/* Import: accepts native exports and legacy v1 files; always lands as a NEW campaign, never overwrites */
+function importCampaignFile(file){
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const j = JSON.parse(r.result);
+      let src = null;
+      if(j && j.app==="arbiter-dm" && j.campaign) src = j.campaign;                       // native format
+      else if(j && (Array.isArray(j.messages)||Array.isArray(j.sheets))) src = j;         // legacy v1 export
+      if(!src) throw 0;
+      const nc = freshCampaign(String(src.name||"Imported Campaign").slice(0,80));
+      nc.messages = (Array.isArray(src.messages)?src.messages:[])
+        .filter(m=>m && typeof m.text==="string" && (m.role==="dm"||m.role==="player"||m.role==="note"))
+        .map(m=>{
+          const o = {role:m.role, text:m.text};
+          if(m.role==="dm"){
+            if(typeof m.raw==="string") o.raw = m.raw;
+            if(Array.isArray(m.rolls)) o.rolls = m.rolls.map(r=>({
+              type:String(r.type||"Check"), who:String(r.who||""),
+              mod:String(r.mod==null?"0":r.mod), dc:(r.dc==null?"":String(r.dc)),
+              mode:String(r.mode||"normal"),
+              result:(r.result && typeof r.result==="object") ? r.result : null
+            }));
+          }
+          return o;
+        });
+      nc.sheets = (Array.isArray(src.sheets)?src.sheets:[]).map(x=>Object.assign(blankSheet(), typeof x==="object"&&x?x:{}));
+      nc.codex  = (Array.isArray(src.codex)?src.codex:[]).map(x=>Object.assign(blankCodex(), typeof x==="object"&&x?x:{}));
+      nc.settings.edition = src.settings?.edition || nc.settings.edition;
+      nc.settings.tone    = src.settings?.tone    || nc.settings.tone;
+      nc.settings.lines   = src.settings?.lines   || "";
+      if(vault.campaigns.some(x=>x.name===nc.name)) nc.name += " (imported)";
+      vault.campaigns.push(nc); activate(nc.id);
+    }catch(e){ alert("That file isn't a campaign The Arbiter understands."); }
+  };
+  r.readAsText(file);
+}
+S("campExport").addEventListener("click",exportCampaign);
+S("campImport").addEventListener("click",()=>S("campFile").click());
+S("campFile").addEventListener("change",e=>{
+  const f = e.target.files[0];
+  if(f) importCampaignFile(f);
+  e.target.value = "";
+});
+
+/* ================================================================
+   BOOT
+================================================================ */
+renderShelf(); renderAll(); renderSheets(); renderCodex(); loadSettings();
+</script>
+</body>
+</html>

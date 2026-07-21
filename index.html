@@ -47,7 +47,15 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 @supports (height:100dvh){ html,body{height:100dvh} }
+html{
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+button,select,input,textarea{touch-action:manipulation}
 body{
+  overscroll-behavior:none;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
   background:
     radial-gradient(1200px 600px at 50% -200px, #2b1d0c 0%, transparent 60%),
     repeating-linear-gradient(93deg, transparent 0 120px, rgba(255,255,255,.012) 120px 121px),
@@ -62,7 +70,8 @@ body{
 header{
   flex:0 0 auto;
   text-align:center;
-  padding:20px 16px 0;
+  /* in an installed PWA the app draws under the iPhone status bar — pad past it */
+  padding:calc(20px + env(safe-area-inset-top)) 16px 0;
   position:relative;
   z-index:5;
 }
@@ -396,6 +405,17 @@ textarea.f{resize:vertical;min-height:64px;line-height:1.5}
 }
 .abil input:focus{outline:none;color:var(--oxblood)}
 .sheet-del{position:absolute;top:10px;right:12px;border:none;background:none;color:var(--oxblood);font-size:18px;cursor:pointer;font-family:var(--fell)}
+.hpline{display:flex;gap:4px;align-items:stretch}
+.hpline input{text-align:center;min-width:0}
+.hpbtn{
+  flex:0 0 34px;min-height:36px;cursor:pointer;
+  font-family:var(--ui);font-weight:700;font-size:16px;line-height:1;
+  border:1px solid #b49a67;border-radius:2px;
+  background:rgba(255,250,235,.55);color:var(--sepia);
+  transition:background .12s,color .12s;
+}
+.hpbtn:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+@media (hover:none){ .hpbtn:hover{background:rgba(255,250,235,.55);color:var(--sepia);border-color:#b49a67} }
 .codex-entry{border:1px solid #b49a67;background:rgba(255,250,235,.4);padding:16px 18px;margin-bottom:16px;position:relative}
 .empty-note{font-style:italic;color:var(--sepia-faint);text-align:center;padding:26px 10px}
 
@@ -413,18 +433,46 @@ footer{
   font-family:var(--ui);font-size:11px;letter-spacing:.22em;color:#6d5528;
 }
 
+/* Touch screens: taps must not leave buttons stuck in their hover state */
+@media (hover:none){
+  .die-btn:hover{background:rgba(255,250,235,.6);color:var(--sepia);border-color:#b49a67}
+  .tbtn:hover{background:transparent;color:var(--sepia-faint);border-color:#b49a67}
+  .sbtn:hover{color:var(--vellum-3);background:transparent;border-color:#6b4d1f}
+  .sbtn.danger:hover{border-color:#7a2c1c;color:#c96a4f;background:transparent}
+  .sbtn.armed,.sbtn.armed:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+  .btn:hover{background:transparent;color:var(--sepia);border-color:var(--gilt-2)}
+  .btn.red:hover{background:transparent;color:var(--oxblood);border-color:var(--oxblood)}
+  .d20btn:hover{transform:none;filter:none}
+  .bkmk:hover{transform:translateY(-6px);color:var(--vellum-3)}
+  .bkmk.active,.bkmk.active:hover{transform:translateY(2px);color:var(--ink)}
+  #sendBtn:hover{background:var(--oxblood)}
+  #sendBtn.halt:hover{background:#3d3126}
+}
+
+/* Installed as a home-screen app: reclaim the chrome the browser used to own */
+@media (display-mode:standalone){
+  footer{display:none}
+  main{padding-bottom:8px}
+}
+
+#shelfMore{display:none}
+
 @media (max-width:700px){
-  header{padding:12px 10px 0}
+  header{padding:calc(10px + env(safe-area-inset-top)) 10px 0}
   .rule-orn{margin:6px auto 0}
   nav{gap:8px;justify-content:flex-start;overflow-x:auto;padding:0 10px;scrollbar-width:none}
   nav::-webkit-scrollbar{display:none}
   .bkmk{flex:0 0 auto;white-space:nowrap;padding:12px 14px 16px;font-size:12.5px;letter-spacing:.1em}
   #shelf{width:calc(100% - 16px);padding:6px 8px;gap:6px;margin-top:8px}
   .shelf-lab{display:none}
-  #campSel{max-width:132px;font-size:16px}
-  #campName{min-width:110px;font-size:16px}
-  .shelf-btns{margin-left:0;width:100%;justify-content:space-between}
+  #campSel{max-width:38vw;font-size:16px}
+  #campName{min-width:90px;font-size:16px}
+  /* campaign actions fold behind ⋯ so the shelf stays one row tall */
+  #shelfMore{display:block;margin-left:auto;min-height:36px;padding:8px 12px}
+  .shelf-btns{display:none;margin-left:0;width:100%;justify-content:space-between}
+  #shelf.open .shelf-btns{display:flex}
   .sbtn{padding:8px 10px;min-height:36px}
+  .entry{margin-bottom:18px}
   main{padding:8px 8px 10px}
   #tome{padding-top:16px}
   #scroll{padding:4px 14px 14px}
@@ -468,6 +516,7 @@ footer{
   <span class="shelf-lab">⚑ CAMPAIGN</span>
   <select id="campSel" title="Switch campaign"></select>
   <input id="campName" placeholder="name this campaign…" title="Rename this campaign" autocomplete="off">
+  <button class="sbtn" id="shelfMore" title="Campaign actions" aria-expanded="false">⋯</button>
   <div class="shelf-btns">
     <button class="sbtn" id="campNew" title="Begin a fresh campaign">＋ NEW</button>
     <button class="sbtn" id="campExport" title="Save this campaign as a file">⇩ EXPORT</button>
@@ -1269,7 +1318,13 @@ function renderSheets(){
       </div>
       <div class="row">
         <div><label class="f">ARMOR CLASS</label><input class="f" data-k="ac" data-i="${i}" value="${escapeHTML(sh.ac)}"></div>
-        <div><label class="f">HP CURRENT</label><input class="f" data-k="hpCur" data-i="${i}" value="${escapeHTML(sh.hpCur)}"></div>
+        <div><label class="f">HP CURRENT</label>
+          <div class="hpline">
+            <button class="hpbtn" data-hp="-1" data-i="${i}" title="Take a hit">−</button>
+            <input class="f" data-k="hpCur" data-i="${i}" value="${escapeHTML(sh.hpCur)}" inputmode="numeric">
+            <button class="hpbtn" data-hp="1" data-i="${i}" title="Heal a point">＋</button>
+          </div>
+        </div>
         <div><label class="f">HP MAX</label><input class="f" data-k="hpMax" data-i="${i}" value="${escapeHTML(sh.hpMax)}"></div>
         <div><label class="f">SPEED</label><input class="f" data-k="speed" data-i="${i}" value="${escapeHTML(sh.speed)}" placeholder="30 ft"></div>
       </div>
@@ -1287,6 +1342,19 @@ sheetList.addEventListener("input",e=>{
   state.sheets[i][k] = e.target.value; persist();
 });
 sheetList.addEventListener("click",e=>{
+  const hp = e.target.closest(".hpbtn");
+  if(hp){
+    const i = +hp.dataset.i, sh = state.sheets[i];
+    if(!sh) return;
+    const cur = parseInt(sh.hpCur,10);
+    let next = (isNaN(cur) ? 0 : cur) + (+hp.dataset.hp);
+    const max = parseInt(sh.hpMax,10);
+    next = Math.max(0, isNaN(max) ? next : Math.min(next, max));
+    sh.hpCur = String(next); persist();
+    const inp = sheetList.querySelector(`input[data-k="hpCur"][data-i="${i}"]`);
+    if(inp) inp.value = sh.hpCur;
+    return;
+  }
   if(e.target.classList.contains("sheet-del")){
     state.sheets.splice(e.target.dataset.i,1); persist(); renderSheets();
   }
@@ -1439,6 +1507,39 @@ S("campFile").addEventListener("change",e=>{
   if(f) importCampaignFile(f);
   e.target.value = "";
 });
+
+S("shelfMore").addEventListener("click",()=>{
+  const open = S("shelf").classList.toggle("open");
+  S("shelfMore").setAttribute("aria-expanded", open ? "true" : "false");
+});
+
+/* ================================================================
+   SAFARI PWA — keep the layout glued to the visual viewport.
+   In a standalone web app iOS does NOT resize the page when the
+   keyboard opens; without this the quill hides behind the keys.
+================================================================ */
+if(window.visualViewport){
+  const vv = window.visualViewport;
+  let raf = 0;
+  const fit = ()=>{
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(()=>{
+      const shrunk = vv.height < window.innerHeight - 1;
+      document.body.style.height = shrunk ? Math.round(vv.height)+"px" : "";
+      window.scrollTo(0,0);                 /* undo Safari's auto-pan */
+      scrollEl.scrollTop = scrollEl.scrollHeight;
+    });
+  };
+  vv.addEventListener("resize", fit);
+  vv.addEventListener("scroll", ()=>window.scrollTo(0,0));
+}
+input.addEventListener("focus", ()=>setTimeout(()=>{ scrollEl.scrollTop = scrollEl.scrollHeight; }, 300));
+
+/* Offline shell: the installed app launches instantly, signal or not.
+   (Registration quietly no-ops where service workers aren't allowed.) */
+if("serviceWorker" in navigator){
+  addEventListener("load", ()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
+}
 
 /* ================================================================
    BOOT

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="The Arbiter">
+  <defs>
+    <radialGradient id="plate" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#3a280f"/>
+      <stop offset="60%" stop-color="#2b1d0c"/>
+      <stop offset="100%" stop-color="#171008"/>
+    </radialGradient>
+    <linearGradient id="gilt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d6b060"/>
+      <stop offset="55%" stop-color="#c1913a"/>
+      <stop offset="100%" stop-color="#8f6a24"/>
+    </linearGradient>
+    <clipPath id="round">
+      <rect x="0" y="0" width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <rect x="0" y="0" width="512" height="512" fill="url(#plate)"/>
+  </g>
+
+  <!-- decorative seal rings -->
+  <rect x="28" y="28" width="456" height="456" rx="90" ry="90"
+        fill="none" stroke="url(#gilt)" stroke-width="9"/>
+  <rect x="51" y="51" width="410" height="410" rx="70" ry="70"
+        fill="none" stroke="#801f12" stroke-width="5"/>
+
+  <!-- corner gilt pips -->
+  <circle cx="28"  cy="28"  r="9" fill="#c1913a"/>
+  <circle cx="484" cy="28"  r="9" fill="#c1913a"/>
+  <circle cx="28"  cy="484" r="9" fill="#c1913a"/>
+  <circle cx="484" cy="484" r="9" fill="#c1913a"/>
+
+  <!-- ornamental initial "A" for Arbiter -->
+  <g font-family="'Cinzel Decorative', Georgia, 'Times New Roman', serif"
+     font-weight="900" text-anchor="middle">
+    <text x="262" y="366" font-size="330" fill="#5c150c">A</text>
+    <text x="256" y="360" font-size="330" fill="url(#gilt)">A</text>
+  </g>
+</svg>

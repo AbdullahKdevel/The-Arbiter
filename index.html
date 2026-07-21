@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>The Arbiter — AI Dungeon Master</title>
 
 <!-- ============ ICONS / FAVICON / PWA ============ -->
@@ -46,6 +46,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
+@supports (height:100dvh){ html,body{height:100dvh} }
 body{
   background:
     radial-gradient(1200px 600px at 50% -200px, #2b1d0c 0%, transparent 60%),
@@ -279,11 +280,46 @@ main{flex:1 1 auto;display:flex;justify-content:center;min-height:0;padding:14px
 .invite p{max-width:56ch;margin:0 auto .6em;line-height:1.6;font-size:16.5px}
 .invite .hint{font-family:var(--ui);font-size:13px;letter-spacing:.12em;color:var(--sepia-faint);margin-top:14px}
 
+/* Dice tray + table tools */
+#bar{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+  padding:6px 12px;border-top:1px solid #b49a67;
+  background:rgba(221,205,163,.5);
+}
+#tray{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tray-lab{font-family:var(--ui);font-size:10.5px;font-weight:700;letter-spacing:.18em;color:var(--sepia-faint);margin-right:2px}
+.die-btn{
+  font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:.06em;
+  color:var(--sepia);background:rgba(255,250,235,.6);
+  border:1px solid #b49a67;border-radius:3px;padding:6px 9px;min-height:32px;cursor:pointer;
+  transition:background .12s,color .12s;
+}
+.die-btn:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+.die-btn:focus-visible{outline:2px solid var(--oxblood);outline-offset:1px}
+#tools{display:flex;gap:6px;flex-wrap:wrap}
+.tbtn{
+  font-family:var(--ui);font-weight:700;font-size:11px;letter-spacing:.1em;
+  color:var(--sepia-faint);background:transparent;
+  border:1px solid #b49a67;border-radius:3px;padding:6px 9px;min-height:32px;cursor:pointer;
+  transition:background .12s,color .12s;
+}
+.tbtn:hover{background:var(--sepia);color:var(--vellum);border-color:var(--sepia)}
+.tbtn:focus-visible{outline:2px solid var(--oxblood);outline-offset:1px}
+
+/* Scribe (table) notes */
+.note .rubric{color:#8a6a2f}
+.note .body-t{font-size:15.5px;color:#6b5427}
+
+/* Streaming cursor */
+.cursor{display:inline-block;width:.55em;height:1em;background:var(--oxblood);vertical-align:-.15em;margin-left:2px;animation:quillblink 1s steps(2) infinite;opacity:.7}
+@keyframes quillblink{50%{opacity:0}}
+
 /* Quill bar */
 #quill{
   flex:0 0 auto;display:flex;gap:0;align-items:stretch;
   border-top:1px solid #b49a67;
   background:linear-gradient(180deg,var(--vellum-2),var(--vellum-3));
+  padding-bottom:env(safe-area-inset-bottom);
 }
 #quill textarea{
   flex:1;resize:none;border:none;background:transparent;
@@ -301,6 +337,8 @@ main{flex:1 1 auto;display:flex;justify-content:center;min-height:0;padding:14px
 }
 #sendBtn:hover{background:#96291a}
 #sendBtn:disabled{background:#8a7350;cursor:wait}
+#sendBtn.halt{background:#3d3126}
+#sendBtn.halt:hover{background:#584636}
 #sendBtn:focus-visible{outline:2px solid var(--gilt);outline-offset:-4px}
 
 /* ============ SHARED FORM STYLE ============ */
@@ -375,12 +413,39 @@ footer{
   font-family:var(--ui);font-size:11px;letter-spacing:.22em;color:#6d5528;
 }
 
-@media (max-width:640px){
-  #scroll{padding:4px 18px 16px}
-  .pad{padding:20px 16px}
-  .bkmk{padding:12px 12px 16px;font-size:12px;letter-spacing:.1em}
+@media (max-width:700px){
+  header{padding:12px 10px 0}
+  .rule-orn{margin:6px auto 0}
+  nav{gap:8px;justify-content:flex-start;overflow-x:auto;padding:0 10px;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  .bkmk{flex:0 0 auto;white-space:nowrap;padding:12px 14px 16px;font-size:12.5px;letter-spacing:.1em}
+  #shelf{width:calc(100% - 16px);padding:6px 8px;gap:6px;margin-top:8px}
+  .shelf-lab{display:none}
+  #campSel{max-width:132px;font-size:16px}
+  #campName{min-width:110px;font-size:16px}
+  .shelf-btns{margin-left:0;width:100%;justify-content:space-between}
+  .sbtn{padding:8px 10px;min-height:36px}
+  main{padding:8px 8px 10px}
+  #tome{padding-top:16px}
+  #scroll{padding:4px 14px 14px}
+  .body-t{font-size:16.5px}
+  .pad{padding:18px 14px}
+  .row{gap:10px}
   .abil-grid{grid-template-columns:repeat(3,1fr)}
-  .invite .init{font-size:48px}
+  .invite{padding:22px 12px 6px}
+  .invite .init{font-size:44px}
+  .rollcard{gap:10px;padding:10px 12px}
+  #bar{padding:6px 8px}
+  #quill textarea{font-size:16px;padding:12px}
+  #sendBtn{padding:0 18px}
+  footer{padding:3px 0 7px;font-size:9.5px;letter-spacing:.16em}
+}
+@media (max-width:420px){
+  .motto{font-size:11px;letter-spacing:.2em}
+  .tray-lab{display:none}
+  .die-btn,.tbtn{padding:6px 7px}
+  .rollres .pip{width:44px;height:44px;font-size:18px}
+  .d20btn{width:50px;height:50px;font-size:13px}
 }
 </style>
 </head>
@@ -418,6 +483,23 @@ footer{
   <section class="page active parch" id="page-adventure">
     <div id="tome">
       <div id="scroll" aria-live="polite"></div>
+      <div id="bar">
+        <div id="tray" title="Roll your own dice — the DM sees the result too">
+          <span class="tray-lab">DICE</span>
+          <button class="die-btn" data-die="4">d4</button>
+          <button class="die-btn" data-die="6">d6</button>
+          <button class="die-btn" data-die="8">d8</button>
+          <button class="die-btn" data-die="10">d10</button>
+          <button class="die-btn" data-die="12">d12</button>
+          <button class="die-btn" data-die="20">d20</button>
+          <button class="die-btn" data-die="100">d100</button>
+        </div>
+        <div id="tools">
+          <button class="tbtn" id="undoBtn" title="Take back the table's last action and the DM's reply">⎌ UNDO</button>
+          <button class="tbtn" id="retellBtn" title="Discard the DM's last reply and have it retold">↻ RETELL</button>
+          <button class="tbtn" id="logBtn" title="Download this adventure as a text chronicle">✎ LOG</button>
+        </div>
+      </div>
       <div id="quill">
         <textarea id="input" rows="1" placeholder="Say what you do, in plain words — the Dungeon Master handles everything else. (Enter to send)"></textarea>
         <button id="sendBtn">SEND</button>
@@ -463,14 +545,19 @@ footer{
         <div>
           <label class="f" for="model">MODEL</label>
           <select class="f" id="model">
-            <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recommended)</option>
-            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (faster, cheaper)</option>
-            <option value="claude-opus-4-8">Claude Opus 4.8 (deepest)</option>
+            <option value="claude-opus-4-8">Claude Opus 4.8 (recommended — deepest DM)</option>
+            <option value="claude-sonnet-5">Claude Sonnet 5 (fast &amp; capable)</option>
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (fastest, cheapest)</option>
           </select>
         </div>
         <div>
           <label class="f" for="edition">RULES EDITION</label>
-          <input class="f" id="edition" value="D&D 5th Edition (SRD 5.1)">
+          <input class="f" id="edition" list="editionList" value="D&D 5th Edition (SRD 5.1)">
+          <datalist id="editionList">
+            <option value="D&D 5th Edition (SRD 5.1)"></option>
+            <option value="D&D 2024 Edition (5.5e)"></option>
+          </datalist>
         </div>
         <div>
           <label class="f" for="tone">CAMPAIGN TONE</label>
@@ -482,13 +569,22 @@ footer{
             <option>Political intrigue</option>
           </select>
         </div>
+        <div>
+          <label class="f" for="verbosity">DM RESPONSE LENGTH</label>
+          <select class="f" id="verbosity">
+            <option value="brief">Brief — quick beats</option>
+            <option value="standard">Standard</option>
+            <option value="cinematic">Cinematic — rich detail</option>
+          </select>
+        </div>
       </div>
 
       <label class="f" for="lines">LINES &amp; VEILS (content the DM must avoid or fade past)</label>
       <textarea class="f" id="lines" placeholder="e.g. no harm to animals; fade to black on torture…"></textarea>
 
       <p style="margin-top:18px;font-size:14px;color:var(--sepia-faint);font-style:italic">
-        Rules edition, tone, and lines &amp; veils belong to the <strong>current campaign</strong>; the key and model belong to this device.
+        Rules edition, tone, response length, and lines &amp; veils belong to the <strong>current campaign</strong>; the key and model belong to this device.
+        Long campaigns are automatically condensed into a running chronicle behind the scenes, so the DM remembers old sessions without re-reading every word (and your token bill stays small).
         Campaigns auto-save in this browser. To carry a saga between devices, use ⇩ EXPORT on the campaign bar above,
         then ⇧ IMPORT the file on the other device — it arrives as its own campaign, story and party intact. Deleting asks twice; exports never contain your key.
       </p>
@@ -510,16 +606,18 @@ const blankSheet = () => ({
 });
 const blankCodex = () => ({ title:"", body:"" });
 
+const defaultSettings = () => ({ edition:"D&D 5th Edition (SRD 5.1)", tone:"Classic high fantasy", lines:"", verbosity:"standard" });
 const freshCampaign = (name) => ({
   id: "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
   name: name||"Untitled Campaign",
   created: new Date().toISOString(),
   messages: [], sheets: [], codex: [],
-  settings: { edition:"D&D 5th Edition (SRD 5.1)", tone:"Classic high fantasy", lines:"" }
+  chronicle: "", chronicleUpTo: 0,
+  settings: defaultSettings()
 });
 
 /* The vault holds every campaign; `state` always points at the active one. */
-let vault = { activeId:null, global:{ apiKey:"", model:"claude-sonnet-4-6" }, campaigns:[] };
+let vault = { activeId:null, global:{ apiKey:"", model:"claude-opus-4-8" }, campaigns:[] };
 let state = null;
 
 /* Guarded persistence: works on GitHub Pages; silently inert where storage is unavailable */
@@ -531,7 +629,7 @@ function restore(){
       const v = JSON.parse(raw);
       if(v && Array.isArray(v.campaigns)){
         vault = v;
-        vault.global = Object.assign({apiKey:"",model:"claude-sonnet-4-6"}, v.global||{});
+        vault.global = Object.assign({apiKey:"",model:"claude-opus-4-8"}, v.global||{});
       }
     } else {
       const old = localStorage.getItem("arbiter-campaign");   // migrate v1 single-campaign saves
@@ -552,6 +650,12 @@ function restore(){
   if(!vault.campaigns.length){
     const c = freshCampaign("First Campaign");
     vault.campaigns.push(c); vault.activeId = c.id;
+  }
+  /* backfill fields added in later versions so old saves keep working */
+  for(const c of vault.campaigns){
+    if(typeof c.chronicle !== "string") c.chronicle = "";
+    if(!Number.isInteger(c.chronicleUpTo) || c.chronicleUpTo < 0) c.chronicleUpTo = 0;
+    c.settings = Object.assign(defaultSettings(), c.settings||{});
   }
   state = vault.campaigns.find(c=>c.id===vault.activeId) || vault.campaigns[0];
   vault.activeId = state.id;
@@ -577,39 +681,47 @@ CORE RULES QUICK REFERENCE (authoritative for adjudication):
 • Opportunity attacks: leaving reach without Disengage provokes one reaction attack.
 • Skills by ability — STR: Athletics · DEX: Acrobatics, Sleight of Hand, Stealth · INT: Arcana, History, Investigation, Nature, Religion · WIS: Animal Handling, Insight, Medicine, Perception, Survival · CHA: Deception, Intimidation, Performance, Persuasion.`;
 
-function buildSystem(){
-  const s = state.settings;
-  const sheets = state.sheets.filter(x=>x.name.trim()).map(x=>
-`— ${x.name} (${x.concept||"adventurer"}) · AC ${x.ac||"?"} · HP ${x.hpCur||"?"}/${x.hpMax||"?"} · Speed ${x.speed||"30 ft"}
-   STR ${x.str} DEX ${x.dex} CON ${x.con} INT ${x.int} WIS ${x.wis} CHA ${x.cha}
-   Proficiencies/skills: ${x.skills||"—"}
-   Inventory: ${x.inventory||"—"}
-   Spells/features: ${x.spells||"—"}
-   Notes: ${x.notes||"—"}`).join("\n");
-  const codex = state.codex.filter(c=>c.title.trim()||c.body.trim())
-    .map(c=>`### ${c.title||"Untitled"}\n${c.body}`).join("\n\n");
+const RULES_2024 = `
+D&D 2024 (5.5e) REVISIONS — this campaign uses the 2024 rules; where they differ from the quick reference above, these win:
+• Weapon Mastery: martial classes (Barbarian, Fighter, Monk, Paladin, Ranger, Rogue) attune to a few weapons and get each weapon's mastery property — Cleave (extra swing at a second adjacent target), Graze (ability-mod damage on a miss), Nick (extra light-weapon attack without the bonus action), Push (shove 10 ft), Sap (disadvantage on the target's next attack), Slow (−10 ft speed), Topple (CON save or prone), Vex (advantage on your next attack vs that target). Fighters get the most masteries.
+• Surprise no longer skips a turn — surprised creatures simply have disadvantage on initiative.
+• Hiding is a DC 15 Stealth check; success grants the Invisible condition until you attack, cast a spell with a verbal component, or are found.
+• Unarmed grapple/shove: on a hit the target makes a STR (Athletics) or DEX (Acrobatics) save vs DC 8 + your STR mod + proficiency — no more opposed checks.
+• Divine Smite is a bonus-action spell now (once per turn, cast on a hit). Monk ki is "Discipline points". Inspiration is "Heroic Inspiration" — reroll any d20, keep the new roll.
+• Drinking a potion is a Bonus Action. Exhaustion: −2 per level on all d20 tests and spell save DCs; death at level 6.
+• Species (not race) carry no ability bonuses; backgrounds grant the +2/+1 ability increases and an origin feat.`;
 
-  return `You're the Dungeon Master for a group of friends who are new to D&D. Keep a clear, natural, balanced tone — competent and easy to follow, never theatrical or over-dramatic, and never forced-casual either. You're a good referee and narrator who keeps the game moving. You're running ${s.edition} in a "${s.tone}" style.
+const DM_CORE = `You're the Dungeon Master for a group of friends who are new to D&D. Keep a clear, natural, balanced tone — competent and easy to follow, never theatrical or over-dramatic, and never forced-casual either. You're a good referee and narrator who keeps the game moving. The campaign's edition, tone, and table preferences are in the CAMPAIGN SETTINGS block at the end of this prompt — honor them.
 
 HOW YOU WRITE
 - Plain and clear. Describe scenes and outcomes in straightforward prose. No purple descriptions, no dramatic flourishes, no fake-casual slang or forced jokes — just tell them what's happening, with a concrete detail or two.
-- Keep it concise. Usually two to four sentences. Lead with what matters, then stop.
+- Follow the reply-length guidance in CAMPAIGN SETTINGS.
 - Don't end every turn with a menu of options — that reads as robotic. Usually just describe the situation and ask what they want to do. Offer a suggestion or two only when someone seems genuinely stuck.
 - Give NPCs distinct voices and put their dialogue in quotes; let them be people, not quest-dispensers.
 - Never decide your players' actions, choices, or dialogue for them. Set the scene, then wait for them.
 
 THIS IS D&D — THE DICE DECIDE
 - When someone tries something with real stakes and a real chance of failing, call for a roll. Skip rolls for the trivial (opening an unlocked door) and the impossible — only roll when the outcome's actually in question. Don't roll for everything; don't roll for nothing.
-- To ask for a roll, work out the math yourself and drop a tag on its OWN LINE, then STOP — do not write what happens next, do not narrate the outcome. Wait for the result:
+- To ask for a d20 roll, work out the math yourself and drop a tag on its OWN LINE, then STOP — do not write what happens next, do not narrate the outcome. Wait for the result:
   [[ROLL type="Stealth check" who="Kara" mod="+5" dc="15" mode="normal"]]
   * type — the check, save, or attack: "Perception check", "Dexterity save", "Attack — shortsword", "Persuasion check"
   * who — the character's name; for a group check ("everyone stay quiet") drop one tag per person
   * mod — the total bonus you figured from their sheet (pick a fair one if they have no sheet: about +5 if they're great at it, +3 good, +0 average, -1 bad). Players never do math.
   * dc — your SECRET target number they don't see (for an attack this is the enemy's AC; for a save it's the effect's DC). Leave it out only if the roll is pure color.
   * mode — "advantage" (roll twice keep the best), "disadvantage" (keep the worst), or "normal", depending on the fiction.
-  The table taps the die to roll; you get the number back, then you narrate what it means. Let the dice genuinely decide — high rolls go well, low rolls go badly, and sometimes the party simply fails. That's expected. Treat natural 20s as a notable success and natural 1s as a notable setback.
-- Combat: call for attack rolls and saves with the tag. Describe damage and wounds in plain words ("that opens a gash across its flank, and it's slowing down") — don't recite hit-point numbers. Keep it fast and cinematic, one clear beat at a time. When a character is downed, prefer an interesting turn — captured, dragged to safety, a rival intervenes — over an abrupt "you die."
+- For damage or any non-d20 dice, use a dice tag instead — same rules, its own line, then stop:
+  [[ROLL type="Damage — greataxe" who="Borin" dice="1d12+3"]]
+  Call for damage right after a hit lands (narrate the hit first if you like, then drop the damage tag). Never invent dice totals yourself.
+- The table taps the die to roll; you get the number back, then you narrate what it means. Let the dice genuinely decide — high rolls go well, low rolls go badly, and sometimes the party simply fails. That's expected. Treat natural 20s as a notable success and natural 1s as a notable setback.
+- FAIL FORWARD — a failed roll complicates the story, it never stalls it. Prefer "you succeed at a cost" or "you fail and something new happens" over "nothing happens, try again." Use the margin: missing the DC by 1–2 is a near thing (success with a snag, or a graceful setback); missing by 5+ goes properly wrong. Beating the DC by 5+ is a clean, stylish success. Never let one failed roll dead-end the adventure — there is always another way in.
+- Lines like "[TABLE ROLL] ..." are dice a player rolled on their own initiative from the dice tray. Acknowledge them lightly and weave the number in if a roll was plausibly pending; otherwise treat it as table chatter and keep the scene moving — never scold anyone for rolling.
+- Combat: call for attack rolls, damage, and saves with tags. Describe wounds in plain words ("that opens a gash across its flank, and it's slowing down") — don't recite the monster's hit-point numbers. Keep it fast and cinematic, one clear beat at a time. Privately track enemy HP, conditions (grappled, prone, frightened…), and positions — and re-check them every round; a dropped condition is the most common DM error. When a character is downed, prefer an interesting turn — captured, dragged to safety, a rival intervenes — over an abrupt "you die."
 - NEVER fake a roll or decide its result before the die lands. If you catch yourself about to say "you succeed" before asking for the check — stop, ask for the check.
+
+PACING AND SPOTLIGHT
+- Alternate the beats: after something goes well, let a complication land; after a setback, offer a spark of hope. All-good is boring; all-bad is miserable.
+- Cut dead air. When a scene has given what it has to give — travel, shopping, a finished conversation — summarize it in a sentence and move to the next interesting decision.
+- With several characters, rotate the spotlight. If someone hasn't acted in a while, hand them an easy in-character opening ("Kara, you're closest to the door when the knock comes").
 
 WHEN PLAYERS DO SOMETHING UNEXPECTED
 - Go with it. Players trying things you didn't plan for is a normal part of the game, not a problem. Never freeze, never say "you can't do that," and never step out of character to explain rules or limits.
@@ -623,24 +735,54 @@ BEGINNER TABLE
 
 KEEPING IT STRAIGHT
 - The world stays consistent — names, places, promises, wounds, gold, who's holding what. Slip up? Just fix it naturally and move on.
-- The character sheets below are the truth about the party. When something changes (took a hit, found loot, spent gold), mention it once in passing so they can update their sheet.
-- Respect these lines & veils no matter what: ${s.lines.trim()||"(none set — just fade to black on anything gratuitous)"}. Steer around them smoothly, in the story.
+- The character sheets in CAMPAIGN SETTINGS are the truth about the party. When something changes (took a hit, found loot, spent gold), mention it once in passing so they can update their sheet.
+- A CHRONICLE block may summarize older sessions — everything in it is canon; never contradict it.
 
 NAMING — MAKE EVERYTHING UNIQUE
 Every name you invent (places, people, taverns, factions, items, gods) must be genuinely distinctive, not the generic fantasy default. This matters a lot; ordinary names make the whole world feel canned.
 - BANNED outright: the words ashen, grey/gray, old, whisper/whispering, veil, vale, moor, hollow, thorn, gloom, shadow, mist, ember, raven, black-/-fell, -wood/-woods, -haven, -reach, -fall, -crest, -watch, -hold, -mere, -wick as name components; and the "Adjective + Nature-Noun" template itself (Whispering Woods, Ashen Moor, Grey Roads, Silent Peaks). If a name you're about to write follows that pattern or uses those words, discard it and make another.
 - No alliteration, no personified-nature phrasing, no melancholy-mood-word filler. Avoid anything you'd expect to see in a stock fantasy name generator.
-- Instead, build names one of these ways: (a) invent a short fictional language with its own consistent sounds and derive names from it (e.g. a region where names favor hard consonants and -ok/-ushka endings); (b) name things after concrete in-world facts — who founded it, what happened there, what's made or mined there, a local animal or crop; (c) borrow phonetics from a real but less-mined language family (Basque, Finnish, Nahuatl, Georgian, Welsh, Malay) and reshape them so they're original, never copied. Keep them pronounceable and fitting the "${s.tone}" tone.
+- Instead, build names one of these ways: (a) invent a short fictional language with its own consistent sounds and derive names from it (e.g. a region where names favor hard consonants and -ok/-ushka endings); (b) name things after concrete in-world facts — who founded it, what happened there, what's made or mined there, a local animal or crop; (c) borrow phonetics from a real but less-mined language family (Basque, Finnish, Nahuatl, Georgian, Welsh, Malay) and reshape them so they're original, never copied. Keep them pronounceable and fitting the campaign's tone.
 - Give recurring names a one-line reason for existing when it's natural ("Tavriz — named for the salt-trader who drowned building the causeway"). Deliberately vary your choices: pick unexpected sounds, uneven syllable counts, names that don't rhyme or pattern-match each other. Variety across the world matters as much as any single name.
 
 Formatting: light touch. Plain paragraphs, NPC dialogue in quotes, maybe an occasional **bold name**. No headers, no bullet-point lists, no stage directions, no section labels. Just talk like a person at the table.
 
-The rules below are your private cheat-sheet for making fair calls and picking DCs — never quote them at the players.
-${SRD_REF}
+The rules below are your private cheat-sheet for making fair calls and picking DCs — never quote them at the players.`;
 
-${sheets ? "THE PARTY — canonical, this is who they are and what they can do:\n"+sheets : "THE PARTY: no sheets yet. Help them make characters the easy way above, and improvise fair bonuses until they do."}
+/* System prompt is sent as two blocks: the big stable core (marked for API
+   prompt-caching, ~90% cheaper on repeat turns) and the small per-campaign
+   block that changes as the table edits sheets and codex entries. */
+function buildSystemBlocks(){
+  const s = state.settings;
+  const sheets = state.sheets.filter(x=>x.name.trim()).map(x=>
+`— ${x.name} (${x.concept||"adventurer"}) · AC ${x.ac||"?"} · HP ${x.hpCur||"?"}/${x.hpMax||"?"} · Speed ${x.speed||"30 ft"}
+   STR ${x.str} DEX ${x.dex} CON ${x.con} INT ${x.int} WIS ${x.wis} CHA ${x.cha}
+   Proficiencies/skills: ${x.skills||"—"}
+   Inventory: ${x.inventory||"—"}
+   Spells/features: ${x.spells||"—"}
+   Notes: ${x.notes||"—"}`).join("\n");
+  const codex = state.codex.filter(c=>c.title.trim()||c.body.trim())
+    .map(c=>`### ${c.title||"Untitled"}\n${c.body}`).join("\n\n");
+  const is2024 = /2024|5\.5/i.test(s.edition||"");
+  const pace = s.verbosity==="brief"
+    ? "Keep replies tight — one to three sentences, then stop."
+    : s.verbosity==="cinematic"
+    ? "You may take four to seven sentences when a scene deserves it, with sensory detail — but never pad."
+    : "Usually two to four sentences. Lead with what matters, then stop.";
 
-${codex ? "THE CAMPAIGN SO FAR — canonical notes the table has filed:\n"+codex : ""}`;
+  const dyn = `CAMPAIGN SETTINGS
+Edition: ${s.edition}. Tone: "${s.tone}" — let it color descriptions, stakes, and humor.
+Reply length: ${pace}
+Lines & veils to respect no matter what: ${(s.lines||"").trim()||"(none set — just fade to black on anything gratuitous)"}. Steer around them smoothly, in the story.
+
+${sheets ? "THE PARTY — canonical, this is who they are and what they can do:\n"+sheets : "THE PARTY: no sheets yet. Help them make characters the easy way described above, and improvise fair bonuses until they do."}
+
+${state.chronicle ? "THE CHRONICLE — canonical summary of earlier sessions (older messages were condensed into this; every fact in it is true):\n"+state.chronicle+"\n\n" : ""}${codex ? "THE CAMPAIGN SO FAR — canonical notes the table has filed:\n"+codex : ""}`;
+
+  return [
+    { type:"text", text: DM_CORE + "\n" + SRD_REF + (is2024 ? "\n"+RULES_2024 : ""), cache_control:{type:"ephemeral"} },
+    { type:"text", text: dyn }
+  ];
 }
 
 /* ================================================================
@@ -676,17 +818,33 @@ const scrollEl = document.getElementById("scroll");
 const rubricFor = {dm:"DUNGEON MASTER", player:"THE TABLE", note:"THE SCRIBE"};
 
 /* ---- DICE ---- */
-function d20(){ return 1 + Math.floor(Math.random()*20); }
+function d(faces){ return 1 + Math.floor(Math.random()*faces); }
+function d20(){ return d(20); }
+function parseDiceExpr(str){
+  const m = String(str||"").trim().match(/^(\d{1,2})\s*d\s*(\d{1,4})\s*([+-]\s*\d+)?$/i);
+  if(!m) return null;
+  return { n: Math.min(Math.max(parseInt(m[1],10),1),20),
+           faces: Math.min(Math.max(parseInt(m[2],10),2),1000),
+           mod: m[3] ? parseInt(m[3].replace(/\s/g,""),10) : 0 };
+}
 function computeRoll(roll){
+  const expr = parseDiceExpr(roll.dice);
+  if(expr && !(expr.n===1 && expr.faces===20)){
+    /* damage / utility dice: NdM+K, each die truly random */
+    const dice = Array.from({length:expr.n}, ()=>d(expr.faces));
+    return { kind:"dice", dice, faces:expr.faces, mod:expr.mod,
+             total: dice.reduce((a,b)=>a+b,0) + expr.mod,
+             expr: `${expr.n}d${expr.faces}${expr.mod ? (expr.mod>0?"+":"")+expr.mod : ""}` };
+  }
   const mode = (roll.mode||"normal").toLowerCase();
-  const mod = parseInt(String(roll.mod==null?0:roll.mod).replace(/[^0-9+\-]/g,""),10) || 0;
+  const mod = (expr ? expr.mod : 0) || parseInt(String(roll.mod==null?0:roll.mod).replace(/[^0-9+\-]/g,""),10) || 0;
   let a = d20(), b = d20(), nat, pair = null;
   if(mode.startsWith("adv")){ nat = Math.max(a,b); pair=[a,b]; }
   else if(mode.startsWith("dis")){ nat = Math.min(a,b); pair=[a,b]; }
   else { nat = a; }
   const dc = (roll.dc===undefined || roll.dc==="" || roll.dc==null) ? null : parseInt(roll.dc,10);
   const total = nat + mod;
-  return { nat, mod, total, pair,
+  return { kind:"d20", nat, mod, total, pair,
            mode: mode.startsWith("adv")?"advantage":mode.startsWith("dis")?"disadvantage":"normal",
            dc: isNaN(dc)?null:dc, crit: nat===20, fumble: nat===1,
            outcome: (dc==null||isNaN(dc)) ? null : (total>=dc ? "success":"fail") };
@@ -704,6 +862,7 @@ function parseRolls(text){
   let narration = text.replace(tag,(_,blob)=>{
     rolls.push({ type:attr(blob,"type")||"Check", who:attr(blob,"who"),
                  mod:attr(blob,"mod")||"0", dc:attr(blob,"dc"),
+                 dice:attr(blob,"dice"),
                  mode:attr(blob,"mode")||"normal", result:null });
     return "";
   }).replace(/\n{3,}/g,"\n\n").trim();
@@ -711,6 +870,9 @@ function parseRolls(text){
 }
 function rollResultLine(roll){
   const r = roll.result;
+  if(r.kind==="dice"){
+    return `${roll.who||"They"} — ${roll.type}: ${r.expr} [${r.dice.join(", ")}] = ${r.total}`;
+  }
   const dice = r.pair ? `d20 [${r.pair.join(", ")}] keep ${r.nat} (${r.mode})` : `d20 ${r.nat}`;
   const modS = (r.mod>=0?"+":"")+r.mod;
   let s = `${roll.who||"They"} — ${roll.type}: ${dice}, ${modS} = ${r.total}`;
@@ -728,10 +890,24 @@ function rollCardHTML(roll, mi, ri){
   const modeBadge = /adv/i.test(roll.mode) ? `<span class="mode">advantage</span>`
                   : /dis/i.test(roll.mode) ? `<span class="mode dis">disadvantage</span>` : "";
   const who = roll.who ? `<span class="who">${escapeHTML(roll.who)}</span>` : "";
+  const dExpr = parseDiceExpr(roll.dice);
+  const isDice = dExpr && !(dExpr.n===1 && dExpr.faces===20);
   if(!r){
+    const hint = isDice ? `${dExpr.n}d${dExpr.faces}${dExpr.mod ? (dExpr.mod>0?"+":"")+dExpr.mod : ""} · tap to roll`
+                        : `bonus ${modS} · tap to roll`;
+    const face = isDice ? `d${dExpr.faces}` : "d20";
     return `<div class="rollcard" data-mi="${mi}" data-ri="${ri}">
-      <div class="what"><b>${escapeHTML(roll.type)}</b> ${modeBadge}${who}<span class="who">bonus ${modS} · tap to roll</span></div>
-      <button class="d20btn roll-go" data-mi="${mi}" data-ri="${ri}" aria-label="Roll the d20">d20</button>
+      <div class="what"><b>${escapeHTML(roll.type)}</b> ${modeBadge}${who}<span class="who">${hint}</span></div>
+      <button class="d20btn roll-go" data-mi="${mi}" data-ri="${ri}" aria-label="Roll the dice">${face}</button>
+    </div>`;
+  }
+  if(r.kind==="dice"){
+    return `<div class="rollcard" data-mi="${mi}" data-ri="${ri}">
+      <div class="what"><b>${escapeHTML(roll.type)}</b>${who}</div>
+      <div class="rollres">
+        <div class="pip">${r.total}</div>
+        <div class="breakdown">${r.expr} = <b>${r.total}</b><small>dice: ${r.dice.join(" · ")}</small></div>
+      </div>
     </div>`;
   }
   const pipCls = r.crit?"pip crit":r.fumble?"pip fumble":"pip";
@@ -753,7 +929,7 @@ function renderAll(){
       <h2>o experience required.</h2>
       <p>Tell the DM what kind of world you want — a haunted swamp, a city of thieves, "surprise me," whatever. Then just say what your character tries to do, in plain words. No rulebook, no math.</p>
       <p>When something's risky, the DM will ask for a roll — you tap the die, and the number decides how it goes. That's the whole game.</p>
-      <div class="hint">NO CHARACTER YET? JUST START — THE DM WILL WALK YOU THROUGH IT · SHEETS UNDER ☙ PARTY · KEY &amp; DIALS UNDER ⚙ SANCTUM</div>
+      <div class="hint">NO CHARACTER YET? JUST START — THE DM WILL WALK YOU THROUGH IT · SHEETS UNDER ☙ PARTY · KEY &amp; DIALS UNDER ⚙ SANCTUM<br>ROLL YOUR OWN DICE FROM THE TRAY BELOW · ⎌ UNDO A TURN · ↻ RETELL A REPLY · ✎ EXPORT THE LOG</div>
     </div>`;
     return;
   }
@@ -802,7 +978,9 @@ function continueAfterRolls(mi){
 ================================================================ */
 function apiHistory(){
   const hist = [];
-  for(const m of state.messages){
+  const start = Math.min(state.chronicleUpTo||0, state.messages.length);
+  for(let i=start;i<state.messages.length;i++){
+    const m = state.messages[i];
     if(m.role==="dm"){
       hist.push({role:"assistant", content:(m.raw||m.text||"").trim() || "(...)"});
       if(m.rolls && m.rolls.length && m.rolls.every(r=>r.result)){
@@ -811,6 +989,7 @@ function apiHistory(){
       }
     }
     else if(m.role==="player") hist.push({role:"user", content:m.text});
+    else if(m.role==="note") hist.push({role:"user", content:"[TABLE ROLL] "+m.text.replace(/\*\*/g,"")});
   }
   const merged = [];
   for(const h of hist){
@@ -822,49 +1001,175 @@ function apiHistory(){
   return win;
 }
 
-async function callDM(){
+/* ---- API plumbing ---- */
+function apiHeaders(){
+  const headers = {"Content-Type":"application/json"};
+  const key = (vault.global.apiKey||"").trim();
+  if(key){
+    headers["x-api-key"] = key;                                  /* ← API KEY IS ATTACHED HERE */
+    headers["anthropic-version"] = "2023-06-01";
+    headers["anthropic-dangerous-direct-browser-access"] = "true";
+  }
+  return headers;
+}
+function webSearchTool(){
+  /* the newest search tool where the model supports it; basic variant for Haiku */
+  const basic = /haiku/i.test(vault.global.model||"");
+  return { type: basic ? "web_search_20250305" : "web_search_20260209", name:"web_search", max_uses:3 };
+}
+function maxTokensFor(){
+  const v = state.settings.verbosity;
+  return v==="brief" ? 600 : v==="cinematic" ? 1800 : 1100;
+}
+async function anthropicFetch(body, signal){
+  /* one retry on overload (529) or a transient network hiccup */
+  for(let attempt=0;;attempt++){
+    try{
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:apiHeaders(), body:JSON.stringify(body), signal
+      });
+      if(res.status===529 && attempt===0){ await new Promise(r=>setTimeout(r,1600)); continue; }
+      return res;
+    }catch(err){
+      if(err.name==="AbortError" || attempt>0) throw err;
+      await new Promise(r=>setTimeout(r,1600));
+    }
+  }
+}
+/* Read an SSE stream, calling onText with the accumulated text as it grows */
+async function readSSE(res, onText){
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "", raw = "";
+  for(;;){
+    const {done, value} = await reader.read();
+    if(done) break;
+    buf += dec.decode(value, {stream:true});
+    const chunks = buf.split("\n\n"); buf = chunks.pop();
+    for(const chunk of chunks){
+      for(const line of chunk.split("\n")){
+        if(!line.startsWith("data:")) continue;
+        let ev; try{ ev = JSON.parse(line.slice(5).trim()); }catch(e){ continue; }
+        if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){
+          raw += ev.delta.text; onText(raw);
+        } else if(ev.type==="error"){
+          throw new Error((ev.error && ev.error.message) || "The stream broke mid-sentence.");
+        }
+      }
+    }
+  }
+  return raw;
+}
+
+let currentAbort = null;
+function setSending(on){
   const btn = document.getElementById("sendBtn");
-  btn.disabled = true;
+  if(on){ btn.textContent = "STOP"; btn.classList.add("halt"); btn.disabled = false; }
+  else { btn.textContent = "SEND"; btn.classList.remove("halt"); btn.disabled = false; currentAbort = null; }
+}
+
+async function callDM(){
+  if(currentAbort) return;
+  currentAbort = new AbortController();
+  setSending(true);
   const ponder = document.createElement("div");
   ponder.className = "entry dm";
   ponder.innerHTML = `<div class="rubric">DUNGEON MASTER</div><div class="body-t ponder">thinking</div>`;
   scrollEl.appendChild(ponder); scrollEl.scrollTop = scrollEl.scrollHeight;
+  const live = ponder.querySelector(".body-t");
+  const tagCut = /\[\[\s*ROLL\b[^\]]*\]\]/gi;
+  let rawSoFar = "";
 
   try{
-    const headers = {"Content-Type":"application/json"};
-    const key = (vault.global.apiKey||"").trim();
-    if(key){
-      headers["x-api-key"] = key;                                  /* ← API KEY IS ATTACHED HERE */
-      headers["anthropic-version"] = "2023-06-01";
-      headers["anthropic-dangerous-direct-browser-access"] = "true";
+    const body = {
+      model: vault.global.model,
+      max_tokens: maxTokensFor(),
+      stream: true,
+      system: buildSystemBlocks(),
+      messages: apiHistory(),
+      tools: [webSearchTool()]
+    };
+    const res = await anthropicFetch(body, currentAbort.signal);
+    if(!res.ok){
+      const data = await res.json().catch(()=>null);
+      throw new Error((data && data.error && data.error.message) || ("HTTP "+res.status));
     }
-    const res = await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST", headers,
-      body:JSON.stringify({
-        model: vault.global.model,
-        max_tokens: 1000,
-        system: buildSystem(),
-        messages: apiHistory(),
-        tools: [{type:"web_search_20250305", name:"web_search", max_uses:3}]
-      })
-    });
-    const data = await res.json();
+    let raw;
+    const ct = res.headers.get("content-type") || "";
+    if(res.body && ct.includes("text/event-stream")){
+      raw = await readSSE(res, txt=>{
+        rawSoFar = txt;
+        live.classList.remove("ponder");
+        /* hide roll tags (and any half-written tag) while the ink is still wet */
+        const preview = txt.replace(tagCut,"").replace(/\[\[[^\]]*$/,"");
+        live.innerHTML = md(preview) + `<span class="cursor"></span>`;
+        scrollEl.scrollTop = scrollEl.scrollHeight;
+      });
+    } else {
+      const data = await res.json();
+      if(data.error) throw new Error(data.error.message||"API error");
+      raw = (data.content||[]).map(b=>b.type==="text"?b.text:"").filter(Boolean).join("\n");
+    }
+    raw = (raw||"").trim();
     ponder.remove();
-    if(data.error) throw new Error(data.error.message||"API error");
-    const raw = (data.content||[]).map(b=>b.type==="text"?b.text:"").filter(Boolean).join("\n").trim();
     if(!raw) throw new Error("Empty reply from the model.");
     const {narration, rolls} = parseRolls(raw);
     pushMsg({role:"dm", text:narration, raw, rolls});
     /* if rolls were requested, we STOP here and wait for the table to tap the dice */
+    maybeChronicle();
   }catch(err){
     ponder.remove();
-    const d = document.createElement("div");
-    d.className = "entry";
-    d.innerHTML = `<div class="body-t errline">⚠ Couldn't reach the DM: ${escapeHTML(err.message)}.
-      ${(vault.global.apiKey||"").trim()?"":"If you're running this outside Claude.ai, add your API key in the ⚙ Sanctum tab."}</div>`;
-    scrollEl.appendChild(d);
+    if(err && err.name==="AbortError"){
+      /* the table pulled the reins — keep whatever was already spoken */
+      const partial = rawSoFar.trim();
+      if(partial){
+        const {narration, rolls} = parseRolls(partial);
+        pushMsg({role:"dm", text:narration, raw:partial, rolls});
+      }
+    } else {
+      const d = document.createElement("div");
+      d.className = "entry";
+      d.innerHTML = `<div class="body-t errline">⚠ Couldn't reach the DM: ${escapeHTML(err.message)}.
+        ${(vault.global.apiKey||"").trim()?"":"If you're running this outside Claude.ai, add your API key in the ⚙ Sanctum tab."}</div>`;
+      scrollEl.appendChild(d);
+    }
   }
-  btn.disabled = false;
+  setSending(false);
+}
+
+/* ================================================================
+   CHRONICLE — old messages get condensed into a running summary so
+   long campaigns stay coherent AND cheap (fewer tokens per request)
+================================================================ */
+let chronicling = false;
+async function maybeChronicle(){
+  const c = state;
+  const start = c.chronicleUpTo||0;
+  if(chronicling || c.messages.length - start <= 56) return;
+  const cut = c.messages.length - 24;              /* the recent scene stays verbatim */
+  if(cut <= start) return;
+  chronicling = true;
+  try{
+    const lines = c.messages.slice(start, cut).map(m=>{
+      let t = (m.role==="dm"?"DM: ":m.role==="player"?"PLAYERS: ":"TABLE: ") + (m.text||"");
+      if(m.rolls && m.rolls.length && m.rolls.every(r=>r.result)) t += "\n" + m.rolls.map(rollResultLine).join("\n");
+      return t;
+    }).join("\n\n");
+    const res = await anthropicFetch({
+      model: vault.global.model,
+      max_tokens: 700,
+      system: [{type:"text", text:"You keep the chronicle of a D&D campaign. Merge the existing chronicle with the new transcript into ONE running summary under 450 words. Keep every fact a DM must never forget: names, places, quests and promises, items and gold, wounds and conditions, NPC attitudes, unresolved threads. Plain prose only — no headers, no commentary, no preamble."}],
+      messages: [{role:"user", content:"EXISTING CHRONICLE:\n"+(c.chronicle||"(none yet)")+"\n\nNEW TRANSCRIPT TO FOLD IN:\n"+lines}]
+    });
+    if(res.ok){
+      const data = await res.json();
+      const summary = (data.content||[]).map(b=>b.type==="text"?b.text:"").filter(Boolean).join("\n").trim();
+      if(summary && vault.campaigns.includes(c)){
+        c.chronicle = summary; c.chronicleUpTo = cut; persist();
+      }
+    }
+  }catch(e){ /* the chronicle is a luxury — it must never break the game */ }
+  chronicling = false;
 }
 
 /* ================================================================
@@ -872,15 +1177,68 @@ async function callDM(){
 ================================================================ */
 const input = document.getElementById("input");
 function send(){
+  if(currentAbort) return;                      /* the DM is mid-sentence */
   const t = input.value.trim();
   if(!t) return;
   input.value = ""; input.style.height = "auto";
   pushMsg({role:"player", text:t});
   callDM();
 }
-document.getElementById("sendBtn").addEventListener("click",send);
+document.getElementById("sendBtn").addEventListener("click",()=>{
+  if(currentAbort) currentAbort.abort();        /* SEND doubles as STOP while streaming */
+  else send();
+});
 input.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
 input.addEventListener("input",()=>{ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,130)+"px"; });
+
+/* ================================================================
+   DICE TRAY + TABLE TOOLS
+================================================================ */
+document.getElementById("tray").addEventListener("click",e=>{
+  const b = e.target.closest(".die-btn"); if(!b) return;
+  const faces = +b.dataset.die;
+  const v = d(faces);
+  pushMsg({role:"note", text:`The table rolls a d${faces}: **${v}**${faces===20&&v===20?" — natural 20!":faces===20&&v===1?" — natural 1…":""}`});
+});
+
+/* Take back the table's last action (and everything the DM said after it) */
+document.getElementById("undoBtn").addEventListener("click",()=>{
+  if(currentAbort) currentAbort.abort();
+  if(!state.messages.length) return;
+  let i = state.messages.length - 1;
+  while(i >= 0 && state.messages[i].role !== "player") i--;
+  state.messages.splice(i >= 0 ? i : state.messages.length - 1);
+  state.chronicleUpTo = Math.min(state.chronicleUpTo, state.messages.length);
+  persist(); renderAll();
+});
+
+/* Discard the DM's last reply and have the scene retold */
+document.getElementById("retellBtn").addEventListener("click",()=>{
+  if(currentAbort) return;
+  if(!state.messages.length || state.messages[state.messages.length-1].role !== "dm") return;
+  state.messages.pop();
+  persist(); renderAll();
+  callDM();
+});
+
+/* Download the whole adventure as a markdown chronicle */
+document.getElementById("logBtn").addEventListener("click",()=>{
+  const lab = {dm:"DUNGEON MASTER", player:"THE TABLE", note:"THE SCRIBE"};
+  let mdOut = `# ${state.name||"Untitled Campaign"}\n_Exported ${new Date().toLocaleString()} — The Arbiter_\n\n`;
+  if(state.chronicle) mdOut += `## The chronicle so far\n${state.chronicle}\n\n## The session log\n\n`;
+  for(const m of state.messages){
+    mdOut += `**${lab[m.role]||"?"}:** ${m.text||""}\n`;
+    if(m.rolls && m.rolls.length) for(const r of m.rolls){
+      mdOut += r.result ? `> 🎲 ${rollResultLine(r)}\n` : `> 🎲 ${r.who?r.who+" — ":""}${r.type} (unrolled)\n`;
+    }
+    mdOut += "\n";
+  }
+  const blob = new Blob([mdOut], {type:"text/markdown"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = ((state.name||"campaign").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"campaign")+"-log.md";
+  a.click(); URL.revokeObjectURL(a.href);
+});
 
 /* ================================================================
    TABS
@@ -971,11 +1329,12 @@ function loadSettings(){
   S("edition").value = state.settings.edition;
   S("tone").value    = state.settings.tone;
   S("lines").value   = state.settings.lines;
+  S("verbosity").value = state.settings.verbosity || "standard";
 }
 ["apiKey","model"].forEach(id=>{
   S(id).addEventListener("input",()=>{ vault.global[id] = S(id).value; persist(); });
 });
-["edition","tone","lines"].forEach(id=>{
+["edition","tone","lines","verbosity"].forEach(id=>{
   S(id).addEventListener("input",()=>{ state.settings[id] = S(id).value; persist(); });
 });
 
@@ -1063,6 +1422,10 @@ function importCampaignFile(file){
       nc.settings.edition = src.settings?.edition || nc.settings.edition;
       nc.settings.tone    = src.settings?.tone    || nc.settings.tone;
       nc.settings.lines   = src.settings?.lines   || "";
+      nc.settings.verbosity = src.settings?.verbosity || "standard";
+      if(typeof src.chronicle==="string") nc.chronicle = src.chronicle;
+      nc.chronicleUpTo = Number.isInteger(src.chronicleUpTo) && src.chronicleUpTo>=0
+        ? Math.min(src.chronicleUpTo, nc.messages.length) : 0;
       if(vault.campaigns.some(x=>x.name===nc.name)) nc.name += " (imported)";
       vault.campaigns.push(nc); activate(nc.id);
     }catch(e){ alert("That file isn't a campaign The Arbiter understands."); }

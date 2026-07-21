@@ -405,6 +405,17 @@ textarea.f{resize:vertical;min-height:64px;line-height:1.5}
 }
 .abil input:focus{outline:none;color:var(--oxblood)}
 .sheet-del{position:absolute;top:10px;right:12px;border:none;background:none;color:var(--oxblood);font-size:18px;cursor:pointer;font-family:var(--fell)}
+.hpline{display:flex;gap:4px;align-items:stretch}
+.hpline input{text-align:center;min-width:0}
+.hpbtn{
+  flex:0 0 34px;min-height:36px;cursor:pointer;
+  font-family:var(--ui);font-weight:700;font-size:16px;line-height:1;
+  border:1px solid #b49a67;border-radius:2px;
+  background:rgba(255,250,235,.55);color:var(--sepia);
+  transition:background .12s,color .12s;
+}
+.hpbtn:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+@media (hover:none){ .hpbtn:hover{background:rgba(255,250,235,.55);color:var(--sepia);border-color:#b49a67} }
 .codex-entry{border:1px solid #b49a67;background:rgba(255,250,235,.4);padding:16px 18px;margin-bottom:16px;position:relative}
 .empty-note{font-style:italic;color:var(--sepia-faint);text-align:center;padding:26px 10px}
 
@@ -1307,7 +1318,13 @@ function renderSheets(){
       </div>
       <div class="row">
         <div><label class="f">ARMOR CLASS</label><input class="f" data-k="ac" data-i="${i}" value="${escapeHTML(sh.ac)}"></div>
-        <div><label class="f">HP CURRENT</label><input class="f" data-k="hpCur" data-i="${i}" value="${escapeHTML(sh.hpCur)}"></div>
+        <div><label class="f">HP CURRENT</label>
+          <div class="hpline">
+            <button class="hpbtn" data-hp="-1" data-i="${i}" title="Take a hit">−</button>
+            <input class="f" data-k="hpCur" data-i="${i}" value="${escapeHTML(sh.hpCur)}" inputmode="numeric">
+            <button class="hpbtn" data-hp="1" data-i="${i}" title="Heal a point">＋</button>
+          </div>
+        </div>
         <div><label class="f">HP MAX</label><input class="f" data-k="hpMax" data-i="${i}" value="${escapeHTML(sh.hpMax)}"></div>
         <div><label class="f">SPEED</label><input class="f" data-k="speed" data-i="${i}" value="${escapeHTML(sh.speed)}" placeholder="30 ft"></div>
       </div>
@@ -1325,6 +1342,19 @@ sheetList.addEventListener("input",e=>{
   state.sheets[i][k] = e.target.value; persist();
 });
 sheetList.addEventListener("click",e=>{
+  const hp = e.target.closest(".hpbtn");
+  if(hp){
+    const i = +hp.dataset.i, sh = state.sheets[i];
+    if(!sh) return;
+    const cur = parseInt(sh.hpCur,10);
+    let next = (isNaN(cur) ? 0 : cur) + (+hp.dataset.hp);
+    const max = parseInt(sh.hpMax,10);
+    next = Math.max(0, isNaN(max) ? next : Math.min(next, max));
+    sh.hpCur = String(next); persist();
+    const inp = sheetList.querySelector(`input[data-k="hpCur"][data-i="${i}"]`);
+    if(inp) inp.value = sh.hpCur;
+    return;
+  }
   if(e.target.classList.contains("sheet-del")){
     state.sheets.splice(e.target.dataset.i,1); persist(); renderSheets();
   }
@@ -1504,6 +1534,12 @@ if(window.visualViewport){
   vv.addEventListener("scroll", ()=>window.scrollTo(0,0));
 }
 input.addEventListener("focus", ()=>setTimeout(()=>{ scrollEl.scrollTop = scrollEl.scrollHeight; }, 300));
+
+/* Offline shell: the installed app launches instantly, signal or not.
+   (Registration quietly no-ops where service workers aren't allowed.) */
+if("serviceWorker" in navigator){
+  addEventListener("load", ()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
+}
 
 /* ================================================================
    BOOT

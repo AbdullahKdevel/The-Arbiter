@@ -366,6 +366,26 @@ code{font-family:monospace;font-size:.9em;background:rgba(0,0,0,.3);padding:1px 
 .act:hover{background:rgba(193,145,58,.16);color:var(--vellum)}
 .act.danger .ic{color:#c96a4f}
 
+/* ============ TOASTS (sheet-update notifications) ============ */
+#toasts{
+  position:fixed;top:calc(58px + var(--sat));left:0;right:0;z-index:60;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:0 calc(12px + var(--sar)) 0 calc(12px + var(--sal));pointer-events:none;
+}
+.toast{
+  pointer-events:auto;max-width:460px;width:100%;
+  display:flex;gap:11px;align-items:flex-start;
+  background:linear-gradient(180deg,#2c1f0d,#1a1207);
+  border:1px solid var(--edge);border-left:3px solid var(--gilt);
+  border-radius:var(--r-md);box-shadow:var(--shadow-pop);padding:12px 15px;cursor:pointer;
+  transform:translateY(-16px) scale(.98);opacity:0;
+  transition:transform .3s cubic-bezier(.2,.8,.3,1), opacity .3s;
+}
+.toast.in{transform:none;opacity:1}
+.toast .ic{color:var(--gilt);font-size:16px;line-height:1.35;flex:0 0 auto}
+.toast .tt{font-family:var(--ui);font-weight:700;font-size:13px;letter-spacing:.05em;color:var(--vellum);text-transform:uppercase}
+.toast .tb{font-family:var(--fell);font-size:15px;color:var(--vellum-2);margin-top:2px;line-height:1.4}
+
 /* Touch screens: never leave a tapped control stuck in :hover */
 @media (hover:none){
   .iconbtn:hover{background:rgba(255,255,255,.04);color:var(--gilt)}
@@ -532,7 +552,8 @@ code{font-family:monospace;font-size:.9em;background:rgba(0,0,0,.3);padding:1px 
 
     <p class="fineprint">
       You play at a real table with real dice and books — <strong>The Arbiter is only the voice of your Dungeon Master.</strong>
-      When a check is called, roll your own dice and tell it the number.<br><br>
+      When a check is called, roll your own dice and tell it the number. As you play, the DM keeps the party sheets live —
+      awarding XP, leveling characters, and recording new gear or spells — and pops a small notice each time a sheet changes.<br><br>
       Edition, tone, response length, and lines &amp; veils belong to the <strong>current campaign</strong>; the key and model belong to this device.
       Long campaigns are quietly condensed into a running chronicle so the DM remembers old sessions without re-reading every word.
       Campaigns auto-save in this browser. Use ⇩ EXPORT / ⇧ IMPORT in the menu to carry a saga between devices. Deleting asks twice; exports never contain your key.
@@ -545,7 +566,7 @@ code{font-family:monospace;font-size:.9em;background:rgba(0,0,0,.3);padding:1px 
    STATE
 ================================================================ */
 const blankSheet = () => ({
-  name:"", concept:"", ac:"", hpCur:"", hpMax:"", speed:"",
+  name:"", concept:"", ac:"", hpCur:"", hpMax:"", speed:"", xp:"",
   str:"10", dex:"10", con:"10", int:"10", wis:"10", cha:"10",
   skills:"", inventory:"", spells:"", notes:""
 });
@@ -598,6 +619,7 @@ function restore(){
     if(typeof c.chronicle !== "string") c.chronicle = "";
     if(!Number.isInteger(c.chronicleUpTo) || c.chronicleUpTo < 0) c.chronicleUpTo = 0;
     c.settings = Object.assign(defaultSettings(), c.settings||{});
+    for(const sh of c.sheets||[]) if(typeof sh.xp !== "string") sh.xp = sh.xp==null ? "" : String(sh.xp);
   }
   state = vault.campaigns.find(c=>c.id===vault.activeId) || vault.campaigns[0];
   vault.activeId = state.id;
@@ -621,7 +643,8 @@ CORE RULES QUICK REFERENCE (your private cheat-sheet for fair calls and DCs):
 • Rests: short (≥1 h, spend Hit Dice), long (≥8 h, restore HP, half Hit Dice, spell slots).
 • Concentration: one spell at a time; taking damage → CON save DC 10 or half the damage, whichever is higher.
 • Opportunity attacks: leaving reach without Disengage provokes one reaction attack.
-• Skills by ability — STR: Athletics · DEX: Acrobatics, Sleight of Hand, Stealth · INT: Arcana, History, Investigation, Nature, Religion · WIS: Animal Handling, Insight, Medicine, Perception, Survival · CHA: Deception, Intimidation, Performance, Persuasion.`;
+• Skills by ability — STR: Athletics · DEX: Acrobatics, Sleight of Hand, Stealth · INT: Arcana, History, Investigation, Nature, Religion · WIS: Animal Handling, Insight, Medicine, Perception, Survival · CHA: Deception, Intimidation, Performance, Persuasion.
+• XP thresholds (cumulative total per character): L2 300, L3 900, L4 2,700, L5 6,500, L6 14,000, L7 23,000, L8 34,000, L9 48,000, L10 64,000, L11 85,000, L12 100,000, L13 120,000, L14 140,000, L15 165,000, L16 195,000, L17 225,000, L18 265,000, L19 305,000, L20 355,000.`;
 
 const RULES_2024 = `
 D&D 2024 (5.5e) REVISIONS — this campaign uses the 2024 rules; where they differ from the quick reference above, these win:
@@ -649,7 +672,7 @@ DICE HAPPEN AT THE TABLE — NOT HERE
 - When they tell you the result ("I got 17", "nat 20!", "rolled a 6, plus 3 is 9"), narrate what happens. If they only give a total, trust it. If they mention the raw d20, treat a natural 20 as a notable success and a natural 1 as a notable setback.
 - For damage, tell them what to roll ("roll your greatsword damage — 2d6 plus your Strength") and wait for the total. Never invent their numbers.
 - If a player forgets to roll or just declares an action with stakes, prompt them for the roll rather than resolving it yourself.
-- NEVER emit brackets, tags, tables, or dice-widget syntax of any kind. Never write "[[ROLL ...]]" or "(rolling…)". Speak like a person at the table. You never produce a number that a die should produce.
+- Never emit dice or roll tags, tables, or widget syntax, and never write "[[ROLL ...]]" or "(rolling…)". Speak like a person at the table — you never produce a number that a die should produce. (The one and only tag you may emit is the silent sheet-update directive described under KEEPING THE SHEETS LIVE, which the app hides from players.)
 - FAIL FORWARD — a failed roll complicates the story, it never stalls it. Prefer "you succeed at a cost" or "you fail and something new happens" over "nothing happens, try again." Use the margin: missing by 1–2 is a near thing; missing by 5+ goes properly wrong; beating the DC by 5+ is a clean, stylish success. One failed roll must never dead-end the adventure.
 - Combat: ask for attack rolls, damage, and saves as above; describe wounds in plain words ("that opens a gash across its flank, and it's slowing") — don't recite monster hit-point numbers. Keep it fast and cinematic, one clear beat at a time. Privately track enemy HP, conditions, and positions, and re-check them every round — a dropped condition is the most common DM error. When a character drops, prefer an interesting turn (captured, dragged to safety, a rival intervenes) over an abrupt "you die."
 
@@ -671,6 +694,22 @@ KEEPING IT STRAIGHT
 - The character sheets in CAMPAIGN SETTINGS are the truth about the party. When something changes (took a hit, found loot, spent gold), mention it once in passing so they can update their sheet.
 - A CHRONICLE block may summarize older sessions — everything in it is canon; never contradict it.
 
+KEEPING THE SHEETS LIVE (silent, automatic)
+- You maintain the party's character sheets as play unfolds. Whenever a durable fact about a character changes, record it with an UPDATE directive so the sheet stays true. Trigger it for: gaining or losing XP, leveling up, learning a spell or feature, gaining or losing an item / tool / weapon, spending or gaining gold, a lasting condition or injury, a name / class / ancestry change, or a rest that resets HP.
+- Put the directive on ITS OWN LINE at the very END of your reply. Emit it only when something actually changed, and include only the fields that changed. Never mention it in your prose, never read it aloud, never explain it — the app applies it silently and shows the player a small notification. Format:
+  [[UPDATE who="Kara" xp="+150" reason="cleared the smugglers' cellar"]]
+  [[UPDATE who="Borin" concept="Fighter 4, Mountain Dwarf" hpMax="+8" +spells="Second Wind (regained on a rest)" reason="reached level 4"]]
+  [[UPDATE who="Kara" +inventory="a set of masterwork thieves' tools" reason="looted from the fence"]]
+  * who — the character's name; it must match their sheet. If no sheet exists yet, one is created for them.
+  * Numeric fields xp, hpCur, hpMax, ac accept a delta ("+150", "-4") or an absolute ("17"). Prefix any text field with + to APPEND instead of replace: +inventory, +spells, +skills, +notes.
+  * Settable text fields: name, concept (class · level · ancestry), speed, str, dex, con, int, wis, cha, skills, inventory, spells, notes.
+  * reason — a short human phrase; it is shown to the player in the notification, so make it readable.
+- HP is mostly tracked by the players at the table; only touch hpCur when it's clearly authoritative (a long rest back to full, a level-up raising hpMax). Prefer updating durable facts: XP, level, items, spells, gold, conditions, backstory notes.
+
+XP AND LEVELING
+- Track XP as the party overcomes meaningful challenges — a fight won, a clever bypass, a story milestone. Award it with xp="+N" on the character(s) involved. Minor threats are worth tens to low hundreds of XP at low levels; scale up with tier. Update XP steadily, not just at session end.
+- When a character's cumulative XP reaches the next threshold (see the XP table in the reference), level them up: narrate the moment in the fiction, then in the SAME reply UPDATE their concept to the new level, raise hpMax by a sensible amount for their class, and add the new feature with +spells. The sheet update rides along silently while you keep talking to the table.
+
 NAMING — MAKE EVERYTHING UNIQUE
 Every name you invent (places, people, taverns, factions, items, gods) must be genuinely distinctive, not the generic fantasy default.
 - BANNED outright: ashen, grey/gray, old, whisper/whispering, veil, vale, moor, hollow, thorn, gloom, shadow, mist, ember, raven, black-/-fell, -wood/-woods, -haven, -reach, -fall, -crest, -watch, -hold, -mere, -wick as name components; and the "Adjective + Nature-Noun" template itself. If a name follows that pattern or uses those words, discard it and make another.
@@ -684,7 +723,7 @@ The rules below are your private reference for fair calls and DCs — never quot
 function buildSystemBlocks(){
   const s = state.settings;
   const sheets = state.sheets.filter(x=>x.name.trim()).map(x=>
-`— ${x.name} (${x.concept||"adventurer"}) · AC ${x.ac||"?"} · HP ${x.hpCur||"?"}/${x.hpMax||"?"} · Speed ${x.speed||"30 ft"}
+`— ${x.name} (${x.concept||"adventurer"}) · AC ${x.ac||"?"} · HP ${x.hpCur||"?"}/${x.hpMax||"?"} · XP ${x.xp||"0"} · Speed ${x.speed||"30 ft"}
    STR ${x.str} DEX ${x.dex} CON ${x.con} INT ${x.int} WIS ${x.wis} CHA ${x.cha}
    Proficiencies/skills: ${x.skills||"—"}
    Inventory: ${x.inventory||"—"}
@@ -764,7 +803,7 @@ function renderAll(){
       <div class="init">N</div>
       <h2>o experience required.</h2>
       <p>Tell the DM what kind of world you want — a haunted swamp, a city of thieves, "surprise me," whatever. Then just say what your character does, in plain words.</p>
-      <p>You play at a real table: when the DM asks for a check, roll your own dice and tell it the number. The Arbiter is only the voice.</p>
+      <p>You play at a real table: when the DM asks for a check, roll your own dice and tell it the number. The Arbiter is only the voice — and it keeps your character sheets, XP and loot up to date as you go.</p>
       <div class="hint">TAP ☰ FOR PARTY SHEETS, CODEX &amp; SETTINGS · ⋯ FOR UNDO, RETELL &amp; EXPORT</div>
     </div>`;
     return;
@@ -891,7 +930,9 @@ async function callDM(){
         rawSoFar = txt;
         const keep = stick();
         live.classList.remove("ponder");
-        live.innerHTML = md(txt) + `<span class="cursor"></span>`;
+        /* hide the silent sheet directive (and any half-written tag) while streaming */
+        const preview = txt.replace(/\[\[\s*UPDATE\b[^\]]*\]\]/gi,"").replace(/\[\[[^\]]*$/,"");
+        live.innerHTML = md(preview) + `<span class="cursor"></span>`;
         if(keep) toBottom();
       });
     } else {
@@ -902,13 +943,20 @@ async function callDM(){
     raw = (raw||"").trim();
     wrap.remove();
     if(!raw) throw new Error("Empty reply from the model.");
-    pushMsg({role:"dm", text:raw, raw});
+    const {clean, ops} = parseSheetOps(raw);
+    if(clean) pushMsg({role:"dm", text:clean, raw:clean});
+    if(ops.length){ const ch = applySheetOps(ops); if(ch.length) notifySheets(ch); }
+    if(!clean && !ops.length) throw new Error("Empty reply from the model.");
     maybeChronicle();
   }catch(err){
     wrap.remove();
     if(err && err.name==="AbortError"){
       const partial = rawSoFar.trim();
-      if(partial) pushMsg({role:"dm", text:partial, raw:partial});
+      if(partial){
+        const {clean, ops} = parseSheetOps(partial);
+        if(clean) pushMsg({role:"dm", text:clean, raw:clean});
+        if(ops.length){ const ch = applySheetOps(ops); if(ch.length) notifySheets(ch); }
+      }
     } else {
       const d = document.createElement("div");
       d.className = "entry";
@@ -951,6 +999,114 @@ async function maybeChronicle(){
     }
   }catch(e){}
   chronicling = false;
+}
+
+/* ================================================================
+   LIVING SHEETS — the DM edits character sheets via a silent
+   [[UPDATE who="..." field="..." ...]] directive; we apply it,
+   strip it from the prose, and toast the table.
+================================================================ */
+const NUM_FIELDS = ["xp","hpCur","hpMax","ac"];
+const TEXT_FIELDS = ["name","concept","speed","str","dex","con","int","wis","cha","skills","inventory","spells","notes"];
+const APPEND_SEP = { skills:", ", inventory:"\n", spells:"\n", notes:"\n" };
+function fieldLabel(k){
+  return ({xp:"XP",hpCur:"HP",hpMax:"Max HP",ac:"AC",concept:"Class",speed:"Speed",skills:"Skills",
+    inventory:"Inventory",spells:"Spells",notes:"Notes",name:"Name",
+    str:"STR",dex:"DEX",con:"CON",int:"INT",wis:"WIS",cha:"CHA"})[k]||k;
+}
+function applyNum(cur, val){
+  const c = parseInt(cur,10); const base = isNaN(c)?0:c;
+  const t = String(val).trim();
+  if(/^[+-]/.test(t)){ const dlt = parseInt(t,10); return String(base + (isNaN(dlt)?0:dlt)); }
+  const abs = parseInt(t,10); return isNaN(abs) ? String(cur||"") : String(abs);
+}
+/* pull [[UPDATE ...]] directives out of a reply → {clean, ops[]} */
+function parseSheetOps(text){
+  const tag = /\[\[\s*UPDATE\b([^\]]*)\]\]/gi;
+  const ops = [];
+  const clean = text.replace(tag,(_,blob)=>{
+    const op = { fields:[] };
+    const attr = /([+]?[A-Za-z]+)\s*=\s*"([^"]*)"/g; let m;
+    while((m = attr.exec(blob))){
+      const key = m[1], val = m[2];
+      if(/^who$/i.test(key)) op.who = val.trim();
+      else if(/^reason$/i.test(key)) op.reason = val.trim();
+      else op.fields.push({ key, val });
+    }
+    if(op.who) ops.push(op);
+    return "";
+  }).replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+  return { clean, ops };
+}
+function applySheetOps(ops){
+  const changes = []; let touched = false;
+  for(const op of ops){
+    const key = (op.who||"").toLowerCase();
+    let sh = state.sheets.find(x=>(x.name||"").trim().toLowerCase()===key)
+          || state.sheets.find(x=>(x.name||"").trim().toLowerCase().startsWith(key) && key.length>=3);
+    let created = false;
+    if(!sh){
+      if(!op.who || op.who.length>40) continue;
+      sh = blankSheet(); sh.name = op.who; state.sheets.push(sh); created = true;
+    }
+    const parts = [];
+    for(const f of op.fields){
+      let k = f.key, append = false;
+      if(k[0]==="+"){ append = true; k = k.slice(1); }
+      const lk = k.toLowerCase();
+      const numK = NUM_FIELDS.find(n=>n.toLowerCase()===lk);
+      const txtK = TEXT_FIELDS.find(n=>n.toLowerCase()===lk);
+      if(numK && !append){
+        sh[numK] = applyNum(sh[numK], f.val);
+        if(numK==="hpCur"){
+          const mx = parseInt(sh.hpMax,10); let v = parseInt(sh[numK],10)||0;
+          v = Math.max(0, isNaN(mx)?v:Math.min(v,mx)); sh[numK] = String(v);
+        }
+        parts.push(`${fieldLabel(numK)} ${sh[numK]}`);
+      } else if(txtK){
+        if(append){
+          const sep = APPEND_SEP[lk] || "\n";
+          sh[txtK] = (sh[txtK] && String(sh[txtK]).trim()) ? sh[txtK]+sep+f.val : f.val;
+          parts.push(`+ ${f.val}`);
+        } else {
+          sh[txtK] = f.val;
+          parts.push(`${fieldLabel(txtK)}: ${f.val}`);
+        }
+      }
+    }
+    if(parts.length || created){
+      touched = true;
+      changes.push({ name: sh.name || "A hero", parts, reason: op.reason, created });
+    }
+  }
+  if(touched){
+    persist();
+    if(document.getElementById("panel-party").classList.contains("open")) renderSheets();
+  }
+  return changes;
+}
+function notifySheets(changes){
+  for(const c of changes){
+    const head = c.created ? `Inscribed ${c.name}` : `${c.name}'s sheet updated`;
+    const body = c.reason || c.parts.join(" · ") || "";
+    toast(head, body);
+  }
+}
+
+/* ---- toast notifications ---- */
+let toastWrap = null;
+function toast(title, body){
+  if(!toastWrap){ toastWrap = document.createElement("div"); toastWrap.id = "toasts"; document.body.appendChild(toastWrap); }
+  const t = document.createElement("div");
+  t.className = "toast press";
+  t.setAttribute("role","status");
+  t.innerHTML = `<span class="ic">✦</span><div class="tx"><div class="tt">${escapeHTML(title)}</div>${body?`<div class="tb">${escapeHTML(body)}</div>`:""}</div>`;
+  toastWrap.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add("in"));
+  let done = false;
+  const kill = ()=>{ if(done) return; done = true; t.classList.remove("in"); setTimeout(()=>t.remove(),300); };
+  t.addEventListener("click", kill);
+  setTimeout(kill, 5600);
 }
 
 /* ================================================================
@@ -1071,6 +1227,7 @@ function renderSheets(){
         </div>
         <div><label class="f">HP MAX</label><input class="f" data-k="hpMax" data-i="${i}" value="${escapeHTML(sh.hpMax)}"></div>
         <div><label class="f">SPEED</label><input class="f" data-k="speed" data-i="${i}" value="${escapeHTML(sh.speed)}" placeholder="30 ft"></div>
+        <div><label class="f">XP</label><input class="f" data-k="xp" data-i="${i}" value="${escapeHTML(String(sh.xp||''))}" inputmode="numeric" placeholder="0"></div>
       </div>
       <label class="f">ABILITY SCORES</label>
       <div class="abil-grid">${ABIL.map(a=>`<div class="abil"><span>${a.toUpperCase()}</span><input data-k="${a}" data-i="${i}" value="${escapeHTML(sh[a])}"></div>`).join("")}</div>

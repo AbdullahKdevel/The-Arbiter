@@ -1,6 +1,9 @@
-/* The Arbiter — service worker: instant launches, full offline shell.
-   Bump the version to force a refresh of everything precached below. */
-const CACHE = "arbiter-shell-v2";
+/* The Arbiter — service worker: instant launches, full offline shell,
+   and user-prompted updates.
+   Bump CACHE to force a refresh of everything precached below AND to make
+   the browser see this file as a new version (which drives the in-app
+   "new version is ready" prompt on GitHub Pages / Safari PWAs). */
+const CACHE = "arbiter-shell-v3";
 const SHELL = [
   "./", "./index.html", "./icon.svg", "./site.webmanifest",
   "./favicon-16.png", "./favicon-32.png", "./favicon-48.png",
@@ -8,9 +11,10 @@ const SHELL = [
 ];
 
 self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
-  );
+  /* Precache the shell, but do NOT skipWaiting here — the new worker stays
+     in "waiting" so the page can detect it and prompt the user. It only
+     takes over when the user accepts (SKIP_WAITING message below). */
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
 });
 
 self.addEventListener("activate", e => {
@@ -21,12 +25,19 @@ self.addEventListener("activate", e => {
   );
 });
 
+/* The page posts this when the user taps "Update" — then we activate,
+   which fires controllerchange in the page and triggers a single reload. */
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
+});
+
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;              // never touch API calls
   const url = new URL(e.request.url);
   const sameOrigin = url.origin === location.origin;
   const isFont = /(^|\.)fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (!sameOrigin && !isFont) return;                  // e.g. api.anthropic.com passes through
+  if (sameOrigin && url.pathname.endsWith("/sw.js")) return; // never serve the worker from cache
 
   /* The app itself: network-first so new releases arrive immediately,
      cached copy when offline. */

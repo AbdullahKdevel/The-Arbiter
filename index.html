@@ -386,6 +386,32 @@ code{font-family:monospace;font-size:.9em;background:rgba(0,0,0,.3);padding:1px 
 .toast .tt{font-family:var(--ui);font-weight:700;font-size:13px;letter-spacing:.05em;color:var(--vellum);text-transform:uppercase}
 .toast .tb{font-family:var(--fell);font-size:15px;color:var(--vellum-2);margin-top:2px;line-height:1.4}
 
+/* ============ UPDATE PROMPT ============ */
+#swUpdate{
+  position:fixed;left:0;right:0;bottom:calc(84px + var(--sab));z-index:70;
+  display:flex;justify-content:center;padding:0 calc(12px + var(--sar)) 0 calc(12px + var(--sal));
+  pointer-events:none;transform:translateY(20px);opacity:0;
+  transition:transform .3s cubic-bezier(.2,.8,.3,1), opacity .3s;
+}
+#swUpdate.in{transform:none;opacity:1}
+.swbar{
+  pointer-events:auto;max-width:460px;width:100%;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,#3a2a12,#241708);
+  border:1px solid var(--gilt-2);border-left:3px solid var(--gilt);
+  border-radius:var(--r-md);box-shadow:var(--shadow-pop);padding:11px 12px 11px 15px;
+}
+.swbar .ic{color:var(--gilt);font-size:17px;flex:0 0 auto}
+.swbar .txt{flex:1;min-width:0;line-height:1.25}
+.swbar .txt b{display:block;font-family:var(--ui);font-weight:700;font-size:12.5px;letter-spacing:.05em;color:var(--vellum);text-transform:uppercase}
+.swbar .txt span{font-family:var(--fell);font-size:14px;color:var(--vellum-2)}
+.swbar .go{flex:0 0 auto;font-family:var(--ui);font-weight:700;letter-spacing:.08em;font-size:12.5px;
+  background:var(--gilt);color:var(--ink);border:none;border-radius:var(--pill);padding:10px 17px;cursor:pointer;box-shadow:var(--shadow-1)}
+.swbar .go:hover{filter:brightness(1.06)}
+.swbar .go:disabled{opacity:.7;cursor:default;filter:none}
+.swbar .x{flex:0 0 auto;width:32px;height:32px;border-radius:var(--pill);border:1px solid rgba(193,145,58,.3);
+  background:transparent;color:var(--vellum-3);font-size:12px;cursor:pointer}
+.swbar .x:hover{background:rgba(193,145,58,.16);color:var(--vellum)}
+
 /* Touch screens: never leave a tapped control stuck in :hover */
 @media (hover:none){
   .iconbtn:hover{background:rgba(255,255,255,.04);color:var(--gilt)}
@@ -397,6 +423,8 @@ code{font-family:monospace;font-size:.9em;background:rgba(0,0,0,.3);padding:1px 
   .hpbtn:hover{background:rgba(255,250,235,.7);color:var(--sepia);border-color:#c3aa78}
   .act:hover{background:transparent;color:var(--vellum-2)}
   #sendBtn:hover{filter:none}
+  .swbar .go:hover{filter:none}
+  .swbar .x:hover{background:transparent;color:var(--vellum-3)}
 }
 
 @media (max-width:480px){
@@ -1437,9 +1465,56 @@ if(window.visualViewport){
 }
 input.addEventListener("focus", ()=>setTimeout(toBottom, 300));
 
-/* Offline shell */
+/* Offline shell + prompted updates.
+   The installed app launches instantly, signal or not. When a new version
+   ships (GitHub Pages redeploy), we detect the waiting worker and show a
+   persistent "new version is ready" prompt; on accept we activate it and
+   reload once. Tuned for standalone Safari PWAs, which stay resident — so
+   we re-check for updates every time the app regains focus.
+   (Registration quietly no-ops where service workers aren't allowed.) */
+let updateBar = null;
+function showUpdatePrompt(onAccept){
+  if(updateBar) return;
+  updateBar = document.createElement("div");
+  updateBar.id = "swUpdate";
+  updateBar.innerHTML = `<div class="swbar">
+    <span class="ic">✧</span>
+    <div class="txt"><b>A new version is ready</b><span>Reload to get the latest Arbiter.</span></div>
+    <button class="go press" type="button">Update</button>
+    <button class="x press" type="button" aria-label="Later">✕</button></div>`;
+  document.body.appendChild(updateBar);
+  requestAnimationFrame(()=>updateBar.classList.add("in"));
+  const close = ()=>{ const el = updateBar; if(!el) return; updateBar = null; el.classList.remove("in"); setTimeout(()=>el.remove(),300); };
+  updateBar.querySelector(".go").addEventListener("click",()=>{
+    const btn = updateBar && updateBar.querySelector(".go");
+    if(btn){ btn.textContent = "Updating…"; btn.disabled = true; }
+    onAccept();
+  });
+  updateBar.querySelector(".x").addEventListener("click", close);
+}
+
 if("serviceWorker" in navigator){
-  addEventListener("load", ()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
+  let swAccepted = false, swRefreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{
+    /* reload only when the user asked for the update — never on first install */
+    if(swAccepted && !swRefreshing){ swRefreshing = true; location.reload(); }
+  });
+  addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./sw.js", { updateViaCache:"none" }).then(reg=>{
+      const offer = w=>{ if(w && navigator.serviceWorker.controller) showUpdatePrompt(()=>{ swAccepted = true; w.postMessage({type:"SKIP_WAITING"}); }); };
+      if(reg.waiting) offer(reg.waiting);                 /* update from a previous visit, not yet accepted */
+      reg.addEventListener("updatefound", ()=>{           /* an update installs while the app is open */
+        const nw = reg.installing; if(!nw) return;
+        nw.addEventListener("statechange", ()=>{ if(nw.state==="installed") offer(nw); });
+      });
+      /* actively check for a new deploy on launch and whenever the PWA
+         regains focus (Safari keeps the app resident between uses) */
+      const check = ()=>{ reg.update().then(()=>{ if(reg.waiting) offer(reg.waiting); }).catch(()=>{}); };
+      check();
+      document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") check(); });
+      setInterval(check, 3600000);                        /* hourly safety net while left open */
+    }).catch(()=>{});
+  });
 }
 
 /* ================================================================

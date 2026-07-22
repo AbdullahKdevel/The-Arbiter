@@ -1,6 +1,6 @@
 /* The Arbiter — service worker: instant launches, full offline shell.
    Bump the version to force a refresh of everything precached below. */
-const CACHE = "arbiter-shell-v1";
+const CACHE = "arbiter-shell-v2";
 const SHELL = [
   "./", "./index.html", "./icon.svg", "./site.webmanifest",
   "./favicon-16.png", "./favicon-32.png", "./favicon-48.png",

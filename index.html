@@ -6,13 +6,10 @@
 <title>The Arbiter — AI Dungeon Master</title>
 
 <!-- ============ ICONS / FAVICON / PWA ============ -->
-<!-- Scalable favicon for modern browsers -->
 <link rel="icon" type="image/svg+xml" href="icon.svg">
-<!-- Raster favicons (fallback for older browsers) -->
 <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
-<!-- Safari home-screen / PWA icon -->
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -29,6 +26,7 @@
 :root{
   --ink:#171008;            /* scriptorium desk */
   --ink-2:#221809;
+  --ink-3:#2c1f0d;
   --vellum:#e9dcbc;         /* parchment */
   --vellum-2:#ddcda3;
   --vellum-3:#cdb98b;
@@ -43,553 +41,452 @@
   --fell:'IM Fell English',serif;
   --fellsc:'IM Fell English SC',serif;
   --ui:'Alegreya Sans SC',sans-serif;
+
+  /* bento shape language: rounded corners + soft shadows */
+  --r:20px;
+  --r-md:16px;
+  --r-sm:12px;
+  --pill:999px;
+  --shadow-1:0 2px 8px rgba(0,0,0,.28);
+  --shadow-2:0 8px 26px rgba(0,0,0,.42);
+  --shadow-pop:0 14px 40px rgba(0,0,0,.55);
+  --edge:rgba(193,145,58,.28);
+
+  --sat:env(safe-area-inset-top);
+  --sab:env(safe-area-inset-bottom);
+  --sal:env(safe-area-inset-left);
+  --sar:env(safe-area-inset-right);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 @supports (height:100dvh){ html,body{height:100dvh} }
-html{
-  -webkit-text-size-adjust:100%;
-  -webkit-tap-highlight-color:transparent;
-}
-button,select,input,textarea{touch-action:manipulation}
+html{ -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent; }
+button,select,input,textarea{touch-action:manipulation;font-family:inherit}
 body{
+  overflow:hidden;
   overscroll-behavior:none;
-  padding-left:env(safe-area-inset-left);
-  padding-right:env(safe-area-inset-right);
   background:
-    radial-gradient(1200px 600px at 50% -200px, #2b1d0c 0%, transparent 60%),
-    repeating-linear-gradient(93deg, transparent 0 120px, rgba(255,255,255,.012) 120px 121px),
+    radial-gradient(1200px 700px at 50% -260px, #2b1d0c 0%, transparent 62%),
+    repeating-linear-gradient(96deg, transparent 0 140px, rgba(255,255,255,.010) 140px 141px),
     var(--ink);
   color:var(--vellum);
   font-family:var(--fell);
   display:flex;flex-direction:column;
-  overflow:hidden;
 }
 
-/* ============ MASTHEAD ============ */
-header{
-  flex:0 0 auto;
-  text-align:center;
-  /* in an installed PWA the app draws under the iPhone status bar — pad past it */
-  padding:calc(20px + env(safe-area-inset-top)) 16px 0;
-  position:relative;
-  z-index:5;
-}
-.sigil{
-  font-family:var(--disp);
-  font-weight:900;
-  font-size:clamp(24px,3.4vw,40px);
-  letter-spacing:.14em;
-  color:var(--vellum);
-  text-shadow:0 0 24px rgba(193,145,58,.25);
-}
-.sigil .amp{color:var(--gilt)}
-.motto{
-  font-family:var(--fellsc);
-  font-size:13px;
-  color:var(--gilt);
-  letter-spacing:.28em;
-  margin-top:2px;
-  opacity:.85;
-}
-.rule-orn{
-  width:min(520px,80%);
-  margin:10px auto 0;
-  height:14px;
-  background:
-    linear-gradient(90deg, transparent, var(--gilt-2) 20%, var(--gilt-2) 80%, transparent) center/100% 1px no-repeat;
-  position:relative;
-}
-.rule-orn::after{
-  content:"❖";
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-52%);
-  color:var(--gilt);font-size:13px;background:var(--ink);padding:0 12px;
-}
+/* press feedback on every tappable control */
+.press{transition:transform .09s ease, background .15s, color .15s, border-color .15s, box-shadow .15s, filter .15s}
+.press:active{transform:scale(.94)}
+@media (prefers-reduced-motion:reduce){ .press:active{transform:none} }
 
-/* ============ BOOKMARK TABS ============ */
-nav{
-  flex:0 0 auto;
-  display:flex;justify-content:center;gap:14px;
-  padding:0 12px;margin-top:-1px;
-  z-index:4;
-}
-.bkmk{
-  font-family:var(--ui);
-  font-weight:700;font-size:14px;letter-spacing:.18em;
-  color:var(--vellum-3);
-  background:linear-gradient(180deg,#3a2712,#2a1b0b 70%);
-  border:1px solid #513a19;border-top:none;
-  padding:14px 22px 18px;
-  cursor:pointer;
-  clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),50% 100%,0 calc(100% - 10px));
-  transform:translateY(-6px);
-  transition:transform .22s cubic-bezier(.2,.9,.3,1.4),color .2s,filter .2s;
-  user-select:none;
-}
-.bkmk:hover{transform:translateY(0);color:var(--vellum)}
-.bkmk:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
-.bkmk.active{
-  transform:translateY(2px);
-  color:var(--ink);
-  background:linear-gradient(180deg,var(--gilt),#a87c2c 75%);
-  border-color:#e5c476;
-  filter:drop-shadow(0 4px 10px rgba(193,145,58,.35));
-}
+/* ============ APP / CHAT (full screen) ============ */
+#app{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
 
-/* ============ CAMPAIGN SHELF ============ */
-#shelf{
-  flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  width:min(880px,calc(100% - 28px));margin:12px auto -2px;
-  background:linear-gradient(180deg,#2e1f0d,#241708);
-  border:1px solid #513a19;border-radius:2px;
-  padding:8px 12px;
-  box-shadow:0 6px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
-  z-index:3;
+#topbar{
+  flex:0 0 auto;display:flex;align-items:center;gap:10px;
+  padding:calc(8px + var(--sat)) calc(10px + var(--sar)) 8px calc(10px + var(--sal));
+  background:linear-gradient(180deg, rgba(23,16,8,.96), rgba(23,16,8,.72));
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(193,145,58,.14);
+  position:relative;z-index:20;
 }
-.shelf-lab{font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:.24em;color:var(--gilt)}
-#campSel{
-  font-family:var(--fell);font-size:15px;color:var(--vellum);
-  background:#1c1206;border:1px solid #513a19;border-radius:2px;padding:6px 8px;max-width:200px;
+.iconbtn{
+  flex:0 0 auto;width:42px;height:42px;border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid rgba(193,145,58,.20);
+  color:var(--gilt);font-size:20px;line-height:1;
 }
-#campName{
-  flex:1;min-width:140px;font-family:var(--fellsc);font-size:16.5px;letter-spacing:.03em;
-  color:var(--vellum);background:transparent;border:none;border-bottom:1px dashed #6b4d1f;padding:4px 6px;
+.iconbtn:hover{background:rgba(193,145,58,.16);color:var(--vellum)}
+.iconbtn:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+#topTitle{
+  flex:1;min-width:0;text-align:center;
+  font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:.12em;
+  color:var(--vellum);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-shadow:0 0 18px rgba(193,145,58,.22);
 }
-#campName::placeholder{color:#7d6335;font-style:italic}
-#campName:focus{outline:none;border-bottom-color:var(--gilt)}
-.shelf-btns{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
-.sbtn{
-  font-family:var(--ui);font-weight:700;font-size:11.5px;letter-spacing:.14em;
-  color:var(--vellum-3);background:transparent;border:1px solid #6b4d1f;border-radius:2px;
-  padding:6px 10px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;
-}
-.sbtn:hover{color:var(--ink);background:var(--gilt);border-color:var(--gilt)}
-.sbtn.danger{border-color:#7a2c1c;color:#c96a4f}
-.sbtn.danger:hover,.sbtn.armed{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
-#campSel:focus,.sbtn:focus-visible{outline:2px solid var(--gilt);outline-offset:1px}
+#topTitle small{display:block;font-family:var(--fellsc);font-size:10.5px;letter-spacing:.22em;color:var(--gilt);opacity:.8}
 
-/* ============ PAGES ============ */
-main{flex:1 1 auto;display:flex;justify-content:center;min-height:0;padding:14px 14px 18px}
-.page{display:none;width:min(880px,100%);min-height:0;flex-direction:column}
-.page.active{display:flex}
-
-/* Parchment panel */
-.parch{
-  background:
-    radial-gradient(160% 90% at 50% 0%, rgba(255,244,214,.5), transparent 55%),
-    radial-gradient(80% 60% at 8% 100%, rgba(90,60,20,.22), transparent 60%),
-    radial-gradient(80% 60% at 95% 96%, rgba(90,60,20,.20), transparent 60%),
-    var(--vellum);
-  color:var(--sepia);
-  border:1px solid #b49a67;
-  outline:1px solid #3c2a10;
-  outline-offset:4px;
-  box-shadow:0 18px 50px rgba(0,0,0,.6), inset 0 0 60px rgba(120,85,35,.22);
-  border-radius:2px;
-  position:relative;
-}
-.parch::before{ /* stitched corners */
-  content:"";position:absolute;inset:8px;pointer-events:none;
-  border:1px dashed rgba(90,60,20,.28);
-}
-
-/* ============ ADVENTURE (CHAT) ============ */
-#tome{flex:1;display:flex;flex-direction:column;min-height:0;padding:26px 0 0}
 #scroll{
-  flex:1;overflow-y:auto;min-height:0;
-  padding:6px 34px 22px;
+  flex:1 1 auto;min-height:0;overflow-y:auto;
+  overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;
+  padding:18px clamp(12px,4vw,26px) 8px;
   scrollbar-width:thin;scrollbar-color:var(--gilt-2) transparent;
 }
-#scroll::-webkit-scrollbar{width:8px}
+#scroll::-webkit-scrollbar{width:7px}
 #scroll::-webkit-scrollbar-thumb{background:var(--gilt-2);border-radius:4px}
+.thread{width:100%;max-width:820px;margin:0 auto}
 
-.entry{margin:0 0 26px;animation:inkfade .5s ease both}
-@keyframes inkfade{from{opacity:0;filter:blur(1.5px)}to{opacity:1;filter:none}}
+/* ===== chat bubbles — bento cards ===== */
+.entry{display:flex;flex-direction:column;margin-bottom:16px;animation:rise .34s cubic-bezier(.2,.8,.3,1) both}
+.entry.player{align-items:flex-end}
+.entry.dm,.entry.note,.entry.sys{align-items:flex-start}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.entry{animation:none}}
-
 .rubric{
-  font-family:var(--ui);font-size:12px;font-weight:700;
-  letter-spacing:.3em;margin-bottom:6px;display:flex;align-items:center;gap:10px;
+  font-family:var(--ui);font-size:10.5px;font-weight:700;letter-spacing:.24em;
+  text-transform:uppercase;margin:0 6px 5px;color:var(--gilt-2);
 }
-.rubric::after{content:"";flex:1;height:1px;background:currentColor;opacity:.25}
-.dm .rubric{color:var(--oxblood)}
 .player .rubric{color:var(--verdigris)}
-
-.body-t{font-size:17.5px;line-height:1.62}
-.body-t p{margin:0 0 .7em}
-.body-t p:last-child{margin-bottom:0}
-.body-t h3{
-  font-family:var(--fellsc);font-weight:400;font-size:20px;
-  color:var(--oxblood);letter-spacing:.06em;margin:.6em 0 .35em;
+.bubble{
+  max-width:min(88%,680px);border-radius:var(--r);padding:13px 17px;
+  box-shadow:var(--shadow-1);position:relative;
 }
-.body-t strong{color:#33230e}
+.dm .bubble{
+  background:
+    radial-gradient(150% 120% at 0% 0%, rgba(255,246,220,.55), transparent 55%),
+    var(--vellum);
+  color:var(--sepia);border:1px solid #c3aa78;
+  border-bottom-left-radius:7px;
+  box-shadow:var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.player .bubble{
+  background:linear-gradient(180deg,var(--ink-3),var(--ink-2));
+  color:var(--vellum);border:1px solid var(--edge);
+  border-bottom-right-radius:7px;font-style:italic;
+}
+.note .bubble,.sys .bubble{
+  background:rgba(61,107,88,.14);border:1px dashed rgba(61,107,88,.5);
+  color:var(--vellum-2);font-style:italic;font-size:15px;
+}
+.body-t{font-size:17px;line-height:1.6}
+.body-t p{margin:0 0 .62em}.body-t p:last-child{margin-bottom:0}
+.body-t h3{font-family:var(--fellsc);font-weight:400;font-size:19px;color:var(--oxblood);letter-spacing:.05em;margin:.5em 0 .3em}
+.player .body-t h3{color:var(--gilt)}
+.body-t strong{color:#33230e}.player .body-t strong{color:var(--gilt)}
 .body-t em{font-style:italic}
-.body-t blockquote{
-  border-left:3px double var(--gilt-2);padding-left:12px;margin:.5em 0;
-  font-style:italic;color:#5d4423;
-}
-.body-t ul{margin:.3em 0 .7em 1.3em}
-.body-t li{margin:.2em 0}
-.body-t hr{border:none;border-top:1px solid rgba(90,60,20,.3);margin:.8em 0}
-.player .body-t{font-style:italic;color:#2f4a3d}
-
-/* ===== DICE — the table's shared roll ===== */
-.rollcard{
-  margin:12px 0 4px;border:1px solid #b49a67;
-  background:linear-gradient(180deg, rgba(255,250,235,.75), rgba(236,224,196,.7));
-  border-radius:3px;padding:12px 14px;
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
-}
-.rollcard .what{font-family:var(--ui);font-weight:700;letter-spacing:.06em;font-size:15px;color:var(--sepia);flex:1;min-width:150px}
-.rollcard .what b{color:var(--oxblood)}
-.rollcard .who{display:block;font-family:var(--fell);font-style:italic;font-weight:400;letter-spacing:0;color:var(--sepia-faint);font-size:13.5px}
-.rollcard .mode{font-family:var(--ui);font-size:11px;letter-spacing:.14em;color:var(--verdigris)}
-.rollcard .mode.dis{color:var(--oxblood)}
-.d20btn{
-  border:none;cursor:pointer;font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.08em;
-  color:var(--vellum);background:radial-gradient(circle at 34% 28%, #a3311d, var(--oxblood-2) 78%);
-  width:56px;height:56px;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 3px 8px rgba(0,0,0,.35);transition:transform .12s,filter .12s;
-}
-.d20btn:hover{transform:translateY(-1px) scale(1.04);filter:brightness(1.1)}
-.d20btn:active{transform:scale(.94)}
-.d20btn:disabled{cursor:default;filter:grayscale(.4) brightness(.9)}
-.d20btn.rolling{animation:tumble .5s ease}
-@keyframes tumble{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-.rollres{
-  display:flex;align-items:center;gap:12px;font-family:var(--ui);
-}
-.rollres .pip{
-  font-family:var(--disp);font-weight:900;font-size:22px;
-  width:52px;height:52px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  background:#f3e2c0;color:var(--oxblood-2);box-shadow:inset 0 0 0 3px var(--oxblood-2);
-}
-.rollres .pip.crit{box-shadow:inset 0 0 0 3px var(--gilt), 0 0 14px rgba(193,145,58,.6);color:var(--gilt-2)}
-.rollres .pip.fumble{box-shadow:inset 0 0 0 3px #555;color:#444;background:#d8ccb0}
-.rollres .breakdown{font-size:13px;color:var(--sepia)}
-.rollres .breakdown b{font-family:var(--disp);font-size:16px;color:var(--oxblood)}
-.rollres .breakdown small{display:block;color:var(--sepia-faint);letter-spacing:.04em;font-size:11.5px;margin-top:1px}
+.body-t blockquote{border-left:3px double var(--gilt-2);padding-left:12px;margin:.5em 0;font-style:italic;color:#5d4423}
+.body-t ul{margin:.3em 0 .6em 1.25em}.body-t li{margin:.2em 0}
+.body-t hr{border:none;border-top:1px solid rgba(90,60,20,.3);margin:.7em 0}
 
 .ponder{font-style:italic;color:var(--sepia-faint)}
 .ponder::after{content:"…";animation:dots 1.2s steps(3) infinite}
 @keyframes dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}
+.cursor{display:inline-block;width:.5em;height:1em;background:var(--oxblood);vertical-align:-.14em;margin-left:2px;border-radius:1px;animation:blink 1s steps(2) infinite;opacity:.7}
+@keyframes blink{50%{opacity:0}}
+.errline{color:#e6b7a6;font-family:var(--ui);font-size:14px;letter-spacing:.03em;background:rgba(128,31,18,.22);border:1px solid rgba(128,31,18,.5);padding:10px 14px;border-radius:var(--r-sm)}
 
-.errline{color:var(--oxblood);font-family:var(--ui);font-size:14px;letter-spacing:.05em}
+/* first-run invitation */
+.invite{max-width:560px;margin:6vh auto 0;text-align:center;
+  background:linear-gradient(180deg, rgba(44,31,13,.66), rgba(23,16,8,.5));
+  border:1px solid var(--edge);border-radius:var(--r);padding:30px 24px;box-shadow:var(--shadow-2)}
+.invite .init{font-family:var(--disp);font-weight:900;font-size:58px;color:var(--gilt);line-height:1;text-shadow:0 0 26px rgba(193,145,58,.35)}
+.invite h2{font-family:var(--fellsc);font-weight:400;font-size:23px;margin:4px 0 12px;color:var(--vellum)}
+.invite p{max-width:46ch;margin:0 auto .7em;line-height:1.6;font-size:16px;color:var(--vellum-2)}
+.invite .hint{font-family:var(--ui);font-size:12.5px;letter-spacing:.08em;color:var(--sepia-faint);margin-top:14px;line-height:1.7}
 
-/* Session-zero invitation */
-.invite{text-align:center;padding:34px 20px 10px}
-.invite .init{
-  font-family:var(--disp);font-weight:900;font-size:64px;color:var(--oxblood);
-  line-height:1;text-shadow:1px 1px 0 rgba(0,0,0,.15);
+/* ===== composer — bento pill ===== */
+#composer{
+  flex:0 0 auto;display:flex;align-items:flex-end;gap:10px;
+  padding:8px calc(12px + var(--sar)) calc(10px + var(--sab)) calc(12px + var(--sal));
 }
-.invite h2{font-family:var(--fellsc);font-weight:400;font-size:24px;margin:6px 0 10px;letter-spacing:.04em}
-.invite p{max-width:56ch;margin:0 auto .6em;line-height:1.6;font-size:16.5px}
-.invite .hint{font-family:var(--ui);font-size:13px;letter-spacing:.12em;color:var(--sepia-faint);margin-top:14px}
-
-/* Dice tray + table tools */
-#bar{
-  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
-  padding:6px 12px;border-top:1px solid #b49a67;
-  background:rgba(221,205,163,.5);
+#composer .field{
+  flex:1;display:flex;align-items:flex-end;gap:8px;
+  background:linear-gradient(180deg,var(--vellum),var(--vellum-2));
+  border:1px solid #c3aa78;border-radius:26px;
+  padding:6px 6px 6px 18px;box-shadow:var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.4);
 }
-#tray{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.tray-lab{font-family:var(--ui);font-size:10.5px;font-weight:700;letter-spacing:.18em;color:var(--sepia-faint);margin-right:2px}
-.die-btn{
-  font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:.06em;
-  color:var(--sepia);background:rgba(255,250,235,.6);
-  border:1px solid #b49a67;border-radius:3px;padding:6px 9px;min-height:32px;cursor:pointer;
-  transition:background .12s,color .12s;
+#input{
+  flex:1;resize:none;border:none;background:transparent;outline:none;
+  font-family:var(--fell);font-size:16.5px;color:var(--sepia);
+  padding:9px 0;line-height:1.45;max-height:130px;
 }
-.die-btn:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
-.die-btn:focus-visible{outline:2px solid var(--oxblood);outline-offset:1px}
-#tools{display:flex;gap:6px;flex-wrap:wrap}
-.tbtn{
-  font-family:var(--ui);font-weight:700;font-size:11px;letter-spacing:.1em;
-  color:var(--sepia-faint);background:transparent;
-  border:1px solid #b49a67;border-radius:3px;padding:6px 9px;min-height:32px;cursor:pointer;
-  transition:background .12s,color .12s;
-}
-.tbtn:hover{background:var(--sepia);color:var(--vellum);border-color:var(--sepia)}
-.tbtn:focus-visible{outline:2px solid var(--oxblood);outline-offset:1px}
-
-/* Scribe (table) notes */
-.note .rubric{color:#8a6a2f}
-.note .body-t{font-size:15.5px;color:#6b5427}
-
-/* Streaming cursor */
-.cursor{display:inline-block;width:.55em;height:1em;background:var(--oxblood);vertical-align:-.15em;margin-left:2px;animation:quillblink 1s steps(2) infinite;opacity:.7}
-@keyframes quillblink{50%{opacity:0}}
-
-/* Quill bar */
-#quill{
-  flex:0 0 auto;display:flex;gap:0;align-items:stretch;
-  border-top:1px solid #b49a67;
-  background:linear-gradient(180deg,var(--vellum-2),var(--vellum-3));
-  padding-bottom:env(safe-area-inset-bottom);
-}
-#quill textarea{
-  flex:1;resize:none;border:none;background:transparent;
-  font-family:var(--fell);font-size:17px;color:var(--sepia);
-  padding:14px 18px;line-height:1.5;max-height:130px;
-}
-#quill textarea::placeholder{color:var(--sepia-faint);font-style:italic}
-#quill textarea:focus{outline:none;box-shadow:inset 0 -2px 0 var(--oxblood)}
+#input::placeholder{color:var(--sepia-faint);font-style:italic}
 #sendBtn{
-  border:none;cursor:pointer;
-  font-family:var(--ui);font-weight:700;letter-spacing:.2em;font-size:14px;
-  background:var(--oxblood);color:var(--vellum);
-  padding:0 26px;
-  transition:background .15s;
+  flex:0 0 auto;width:44px;height:44px;border-radius:var(--pill);border:none;cursor:pointer;
+  background:radial-gradient(circle at 34% 28%, #a3311d, var(--oxblood-2) 82%);
+  color:var(--vellum);font-size:19px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(128,31,18,.5);
 }
-#sendBtn:hover{background:#96291a}
-#sendBtn:disabled{background:#8a7350;cursor:wait}
-#sendBtn.halt{background:#3d3126}
-#sendBtn.halt:hover{background:#584636}
-#sendBtn:focus-visible{outline:2px solid var(--gilt);outline-offset:-4px}
+#sendBtn:hover{filter:brightness(1.08)}
+#sendBtn.halt{background:radial-gradient(circle at 34% 28%,#59493a,#33291f 82%);box-shadow:0 4px 12px rgba(0,0,0,.5)}
+#sendBtn:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
 
-/* ============ SHARED FORM STYLE ============ */
-.pad{padding:28px 32px;overflow-y:auto;flex:1;min-height:0;scrollbar-width:thin}
-.sect-title{
-  font-family:var(--fellsc);font-size:23px;color:var(--oxblood);
-  letter-spacing:.05em;margin-bottom:4px;
+/* ============ SCRIM ============ */
+#scrim{
+  position:fixed;inset:0;z-index:40;background:rgba(8,5,2,.62);
+  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+  opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s;
 }
-.sect-sub{font-size:15px;color:var(--sepia-faint);font-style:italic;margin-bottom:20px}
-label.f{
-  display:block;font-family:var(--ui);font-size:12px;font-weight:700;
-  letter-spacing:.18em;color:var(--gilt-2);margin:12px 0 4px;
+#scrim.show{opacity:1;visibility:visible}
+
+/* ============ DRAWER (left) ============ */
+#drawer{
+  position:fixed;top:0;left:0;bottom:0;z-index:50;
+  width:min(85vw,340px);
+  padding-top:var(--sat);padding-left:var(--sal);padding-bottom:var(--sab);
+  background:linear-gradient(180deg,#241708,#1a1207 70%);
+  border-right:1px solid rgba(193,145,58,.2);
+  border-top-right-radius:var(--r);border-bottom-right-radius:var(--r);
+  box-shadow:var(--shadow-pop);
+  transform:translateX(-104%);transition:transform .3s cubic-bezier(.3,.8,.3,1);
+  display:flex;flex-direction:column;overflow:hidden;
 }
+#drawer.show{transform:none}
+.drawer-head{text-align:center;padding:20px 18px 14px}
+.drawer-head .sigil{font-family:var(--disp);font-weight:900;font-size:22px;letter-spacing:.12em;color:var(--vellum);text-shadow:0 0 20px rgba(193,145,58,.25)}
+.drawer-head .sigil .amp{color:var(--gilt)}
+.drawer-head .motto{font-family:var(--fellsc);font-size:10.5px;letter-spacing:.24em;color:var(--gilt);opacity:.85;margin-top:2px}
+.drawer-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:4px 14px 16px}
+.d-label{font-family:var(--ui);font-size:10.5px;font-weight:700;letter-spacing:.22em;color:var(--gilt-2);margin:16px 6px 8px}
+
+/* campaign card in drawer */
+.camp-card{background:rgba(255,255,255,.03);border:1px solid rgba(193,145,58,.18);border-radius:var(--r-md);padding:12px;box-shadow:var(--shadow-1)}
+#campSel{
+  width:100%;font-family:var(--fell);font-size:15.5px;color:var(--vellum);
+  background:#1c1206;border:1px solid #55401c;border-radius:var(--r-sm);padding:9px 10px;
+}
+#campName{
+  width:100%;margin-top:8px;font-family:var(--fellsc);font-size:16px;letter-spacing:.02em;
+  color:var(--vellum);background:transparent;border:none;border-bottom:1px dashed #6b4d1f;padding:6px 4px;
+}
+#campName::placeholder{color:#7d6335;font-style:italic}
+#campName:focus,#campSel:focus{outline:none;border-color:var(--gilt)}
+.camp-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.chip{
+  font-family:var(--ui);font-weight:700;font-size:11.5px;letter-spacing:.1em;
+  color:var(--vellum-3);background:rgba(255,255,255,.03);
+  border:1px solid #55401c;border-radius:var(--pill);
+  padding:9px 8px;cursor:pointer;text-align:center;
+}
+.chip:hover{color:var(--ink);background:var(--gilt);border-color:var(--gilt)}
+.chip.danger{border-color:#7a2c1c;color:#c96a4f}
+.chip.danger:hover,.chip.armed{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+.chip:focus-visible{outline:2px solid var(--gilt);outline-offset:1px}
+
+/* nav list in drawer */
+.navlist{display:flex;flex-direction:column;gap:6px}
+.navitem{
+  display:flex;align-items:center;gap:13px;width:100%;text-align:left;cursor:pointer;
+  font-family:var(--ui);font-weight:700;font-size:15px;letter-spacing:.08em;
+  color:var(--vellum-2);background:rgba(255,255,255,.02);
+  border:1px solid rgba(193,145,58,.14);border-radius:var(--r-md);
+  padding:14px 16px;
+}
+.navitem .ic{font-size:19px;color:var(--gilt);width:22px;text-align:center}
+.navitem:hover{background:rgba(193,145,58,.14);color:var(--vellum);border-color:var(--edge)}
+.navitem:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+
+/* ============ PANELS (party / codex / sanctum) — full screen ============ */
+.panel{
+  position:fixed;inset:0;z-index:45;display:flex;flex-direction:column;
+  background:
+    radial-gradient(1000px 600px at 50% -220px, #2b1d0c 0%, transparent 60%),
+    var(--ink);
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.3,.8,.3,1);
+  visibility:hidden;
+}
+.panel.open{transform:none;visibility:visible}
+.panel-head{
+  flex:0 0 auto;display:flex;align-items:center;gap:12px;
+  padding:calc(8px + var(--sat)) calc(12px + var(--sar)) 10px calc(10px + var(--sal));
+  background:linear-gradient(180deg, rgba(23,16,8,.96), rgba(23,16,8,.7));
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(193,145,58,.14);
+}
+.panel-head .ttl{flex:1;font-family:var(--fellsc);font-size:21px;letter-spacing:.04em;color:var(--gilt)}
+.panel-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;
+  padding:16px clamp(12px,4vw,22px) calc(26px + var(--sab));}
+.panel-inner{max-width:820px;margin:0 auto}
+.sect-sub{font-size:14.5px;color:var(--sepia-faint);font-style:italic;margin:0 2px 18px;color:#9c855b}
+
+/* bento cards */
+.card{
+  background:linear-gradient(180deg, rgba(44,31,13,.5), rgba(23,16,8,.35));
+  border:1px solid var(--edge);border-radius:var(--r);
+  padding:18px;margin-bottom:16px;box-shadow:var(--shadow-2);position:relative;
+}
+.card.parch{
+  background:
+    radial-gradient(150% 110% at 50% 0%, rgba(255,246,220,.5), transparent 55%),
+    var(--vellum);
+  color:var(--sepia);border:1px solid #c3aa78;
+}
+.card-del{position:absolute;top:12px;right:14px;border:none;background:rgba(128,31,18,.14);color:var(--oxblood);
+  width:32px;height:32px;border-radius:var(--pill);font-size:16px;cursor:pointer}
+.card.parch .card-del:hover{background:var(--oxblood);color:var(--vellum)}
+
+label.f{display:block;font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.16em;color:var(--gilt-2);margin:14px 0 5px;text-transform:uppercase}
+.card.parch label.f{color:#9c6f24}
 input.f,select.f,textarea.f{
   width:100%;font-family:var(--fell);font-size:16px;color:var(--sepia);
-  background:rgba(255,250,235,.55);
-  border:1px solid #b49a67;border-radius:2px;
-  padding:8px 10px;
+  background:rgba(255,250,235,.7);border:1px solid #c3aa78;border-radius:var(--r-sm);padding:10px 12px;
 }
-input.f:focus,select.f:focus,textarea.f:focus{outline:none;border-color:var(--oxblood);box-shadow:0 0 0 1px var(--oxblood)}
-textarea.f{resize:vertical;min-height:64px;line-height:1.5}
+.card:not(.parch) input.f,.card:not(.parch) select.f,.card:not(.parch) textarea.f,
+.panel-inner > input.f,.panel-inner > select.f,.panel-inner > textarea.f{
+  background:rgba(255,255,255,.05);border:1px solid #55401c;color:var(--vellum);
+}
+input.f:focus,select.f:focus,textarea.f:focus{outline:none;border-color:var(--gilt);box-shadow:0 0 0 2px rgba(193,145,58,.28)}
+textarea.f{resize:vertical;min-height:60px;line-height:1.5}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+
 .btn{
-  font-family:var(--ui);font-weight:700;letter-spacing:.16em;font-size:13px;
-  border:1px solid var(--gilt-2);background:transparent;color:var(--sepia);
-  padding:9px 18px;cursor:pointer;border-radius:2px;
-  transition:background .15s,color .15s;
+  font-family:var(--ui);font-weight:700;letter-spacing:.12em;font-size:13px;
+  border:1px solid var(--gilt-2);background:rgba(193,145,58,.10);color:var(--vellum);
+  padding:12px 20px;cursor:pointer;border-radius:var(--pill);box-shadow:var(--shadow-1);
 }
 .btn:hover{background:var(--gilt);color:var(--ink);border-color:var(--gilt)}
-.btn.red{border-color:var(--oxblood);color:var(--oxblood)}
-.btn.red:hover{background:var(--oxblood);color:var(--vellum)}
-.btn:focus-visible{outline:2px solid var(--oxblood);outline-offset:2px}
-.row{display:flex;gap:14px;flex-wrap:wrap}
-.row > *{flex:1;min-width:120px}
+.btn:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.btn.block{display:block;width:100%;text-align:center;margin-top:6px}
 
-/* Character sheet cards */
-.sheet{
-  border:1px solid #b49a67;border-radius:2px;
-  background:rgba(255,250,235,.4);
-  padding:18px 20px;margin-bottom:20px;position:relative;
-}
-.sheet::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:4px;
-  background:linear-gradient(90deg,var(--oxblood),var(--gilt),var(--verdigris));
-  opacity:.55;
-}
-.abil-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px}
-.abil{
-  text-align:center;border:1px solid #b49a67;border-radius:2px;
-  background:rgba(255,250,235,.55);padding:6px 2px;
-}
-.abil span{display:block;font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--gilt-2)}
-.abil input{
-  width:100%;border:none;background:transparent;text-align:center;
-  font-family:var(--disp);font-size:19px;color:var(--sepia);
-}
-.abil input:focus{outline:none;color:var(--oxblood)}
-.sheet-del{position:absolute;top:10px;right:12px;border:none;background:none;color:var(--oxblood);font-size:18px;cursor:pointer;font-family:var(--fell)}
-.hpline{display:flex;gap:4px;align-items:stretch}
+.hpline{display:flex;gap:6px;align-items:stretch}
 .hpline input{text-align:center;min-width:0}
-.hpbtn{
-  flex:0 0 34px;min-height:36px;cursor:pointer;
-  font-family:var(--ui);font-weight:700;font-size:16px;line-height:1;
-  border:1px solid #b49a67;border-radius:2px;
-  background:rgba(255,250,235,.55);color:var(--sepia);
-  transition:background .12s,color .12s;
-}
+.hpbtn{flex:0 0 40px;min-height:42px;cursor:pointer;font-family:var(--ui);font-weight:700;font-size:18px;line-height:1;
+  border:1px solid #c3aa78;border-radius:var(--r-sm);background:rgba(255,250,235,.7);color:var(--sepia)}
 .hpbtn:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
-@media (hover:none){ .hpbtn:hover{background:rgba(255,250,235,.55);color:var(--sepia);border-color:#b49a67} }
-.codex-entry{border:1px solid #b49a67;background:rgba(255,250,235,.4);padding:16px 18px;margin-bottom:16px;position:relative}
-.empty-note{font-style:italic;color:var(--sepia-faint);text-align:center;padding:26px 10px}
+.abil-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px}
+.abil{text-align:center;border:1px solid #c3aa78;border-radius:var(--r-sm);background:rgba(255,250,235,.7);padding:7px 2px}
+.abil span{display:block;font-family:var(--ui);font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#9c6f24}
+.abil input{width:100%;border:none;background:transparent;text-align:center;font-family:var(--disp);font-size:18px;color:var(--sepia)}
+.abil input:focus{outline:none;color:var(--oxblood)}
+.empty-note{font-style:italic;color:var(--sepia-faint);text-align:center;padding:26px 10px;color:#9c855b}
 
-/* API-key callout */
-.keybox{
-  border:2px solid var(--oxblood);background:rgba(128,31,18,.06);
-  padding:16px 18px;margin-bottom:22px;
+.keybox{border:1px solid rgba(128,31,18,.5);background:rgba(128,31,18,.12);border-radius:var(--r-md);padding:16px 18px;margin-bottom:20px}
+.keybox .kb-t{font-family:var(--ui);font-weight:700;letter-spacing:.16em;font-size:12.5px;color:#e0a48f;margin-bottom:8px}
+.keybox p{font-size:14px;line-height:1.55;margin-bottom:8px;color:var(--vellum-2)}
+code{font-family:monospace;font-size:.9em;background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;color:var(--gilt)}
+.fineprint{margin-top:16px;font-size:13.5px;color:#9c855b;font-style:italic;line-height:1.6}
+
+/* ============ POPOVER (chat actions) ============ */
+#actions{
+  position:fixed;z-index:55;top:calc(10px + var(--sat));right:calc(10px + var(--sar));
+  min-width:210px;background:linear-gradient(180deg,#2c1f0d,#1c1308);
+  border:1px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-pop);
+  padding:6px;transform-origin:top right;
+  opacity:0;visibility:hidden;transform:scale(.9) translateY(-6px);
+  transition:opacity .16s ease, transform .16s ease, visibility .16s;
 }
-.keybox .kb-t{font-family:var(--ui);font-weight:700;letter-spacing:.2em;font-size:13px;color:var(--oxblood);margin-bottom:6px}
-.keybox p{font-size:14.5px;line-height:1.55;margin-bottom:8px}
-code{font-family:monospace;font-size:.9em;background:rgba(90,60,20,.12);padding:1px 5px;border-radius:2px}
-
-footer{
-  flex:0 0 auto;text-align:center;padding:6px 0 10px;
-  font-family:var(--ui);font-size:11px;letter-spacing:.22em;color:#6d5528;
+#actions.show{opacity:1;visibility:visible;transform:none}
+.act{
+  display:flex;align-items:center;gap:12px;width:100%;cursor:pointer;text-align:left;
+  font-family:var(--ui);font-weight:600;font-size:14px;letter-spacing:.04em;color:var(--vellum-2);
+  background:transparent;border:none;border-radius:var(--r-sm);padding:11px 12px;
 }
+.act .ic{font-size:16px;color:var(--gilt);width:20px;text-align:center}
+.act:hover{background:rgba(193,145,58,.16);color:var(--vellum)}
+.act.danger .ic{color:#c96a4f}
 
-/* Touch screens: taps must not leave buttons stuck in their hover state */
+/* Touch screens: never leave a tapped control stuck in :hover */
 @media (hover:none){
-  .die-btn:hover{background:rgba(255,250,235,.6);color:var(--sepia);border-color:#b49a67}
-  .tbtn:hover{background:transparent;color:var(--sepia-faint);border-color:#b49a67}
-  .sbtn:hover{color:var(--vellum-3);background:transparent;border-color:#6b4d1f}
-  .sbtn.danger:hover{border-color:#7a2c1c;color:#c96a4f;background:transparent}
-  .sbtn.armed,.sbtn.armed:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
-  .btn:hover{background:transparent;color:var(--sepia);border-color:var(--gilt-2)}
-  .btn.red:hover{background:transparent;color:var(--oxblood);border-color:var(--oxblood)}
-  .d20btn:hover{transform:none;filter:none}
-  .bkmk:hover{transform:translateY(-6px);color:var(--vellum-3)}
-  .bkmk.active,.bkmk.active:hover{transform:translateY(2px);color:var(--ink)}
-  #sendBtn:hover{background:var(--oxblood)}
-  #sendBtn.halt:hover{background:#3d3126}
+  .iconbtn:hover{background:rgba(255,255,255,.04);color:var(--gilt)}
+  .chip:hover{color:var(--vellum-3);background:rgba(255,255,255,.03);border-color:#55401c}
+  .chip.danger:hover{background:transparent;color:#c96a4f;border-color:#7a2c1c}
+  .chip.armed,.chip.armed:hover{background:var(--oxblood);color:var(--vellum);border-color:var(--oxblood)}
+  .navitem:hover{background:rgba(255,255,255,.02);color:var(--vellum-2);border-color:rgba(193,145,58,.14)}
+  .btn:hover{background:rgba(193,145,58,.10);color:var(--vellum);border-color:var(--gilt-2)}
+  .hpbtn:hover{background:rgba(255,250,235,.7);color:var(--sepia);border-color:#c3aa78}
+  .act:hover{background:transparent;color:var(--vellum-2)}
+  #sendBtn:hover{filter:none}
 }
 
-/* Installed as a home-screen app: reclaim the chrome the browser used to own */
-@media (display-mode:standalone){
-  footer{display:none}
-  main{padding-bottom:8px}
-}
-
-#shelfMore{display:none}
-
-@media (max-width:700px){
-  header{padding:calc(10px + env(safe-area-inset-top)) 10px 0}
-  .rule-orn{margin:6px auto 0}
-  nav{gap:8px;justify-content:flex-start;overflow-x:auto;padding:0 10px;scrollbar-width:none}
-  nav::-webkit-scrollbar{display:none}
-  .bkmk{flex:0 0 auto;white-space:nowrap;padding:12px 14px 16px;font-size:12.5px;letter-spacing:.1em}
-  #shelf{width:calc(100% - 16px);padding:6px 8px;gap:6px;margin-top:8px}
-  .shelf-lab{display:none}
-  #campSel{max-width:38vw;font-size:16px}
-  #campName{min-width:90px;font-size:16px}
-  /* campaign actions fold behind ⋯ so the shelf stays one row tall */
-  #shelfMore{display:block;margin-left:auto;min-height:36px;padding:8px 12px}
-  .shelf-btns{display:none;margin-left:0;width:100%;justify-content:space-between}
-  #shelf.open .shelf-btns{display:flex}
-  .sbtn{padding:8px 10px;min-height:36px}
-  .entry{margin-bottom:18px}
-  main{padding:8px 8px 10px}
-  #tome{padding-top:16px}
-  #scroll{padding:4px 14px 14px}
-  .body-t{font-size:16.5px}
-  .pad{padding:18px 14px}
-  .row{gap:10px}
+@media (max-width:480px){
+  .bubble{max-width:92%}
   .abil-grid{grid-template-columns:repeat(3,1fr)}
-  .invite{padding:22px 12px 6px}
-  .invite .init{font-size:44px}
-  .rollcard{gap:10px;padding:10px 12px}
-  #bar{padding:6px 8px}
-  #quill textarea{font-size:16px;padding:12px}
-  #sendBtn{padding:0 18px}
-  footer{padding:3px 0 7px;font-size:9.5px;letter-spacing:.16em}
-}
-@media (max-width:420px){
-  .motto{font-size:11px;letter-spacing:.2em}
-  .tray-lab{display:none}
-  .die-btn,.tbtn{padding:6px 7px}
-  .rollres .pip{width:44px;height:44px;font-size:18px}
-  .d20btn{width:50px;height:50px;font-size:13px}
+  .body-t{font-size:16px}
+  #topTitle{font-size:15px}
 }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="sigil">THE <span class="amp">✦</span> ARBITER</div>
-  <div class="motto">AN ORACLE OF DUNGEONS &amp; OF DRAGONS</div>
-  <div class="rule-orn"></div>
-</header>
-
-<nav role="tablist">
-  <button class="bkmk active" data-page="adventure" role="tab">⚔ Adventure</button>
-  <button class="bkmk" data-page="party" role="tab">☙ Party</button>
-  <button class="bkmk" data-page="codex" role="tab">✦ Codex</button>
-  <button class="bkmk" data-page="settings" role="tab">⚙ Sanctum</button>
-</nav>
-
-<div id="shelf">
-  <span class="shelf-lab">⚑ CAMPAIGN</span>
-  <select id="campSel" title="Switch campaign"></select>
-  <input id="campName" placeholder="name this campaign…" title="Rename this campaign" autocomplete="off">
-  <button class="sbtn" id="shelfMore" title="Campaign actions" aria-expanded="false">⋯</button>
-  <div class="shelf-btns">
-    <button class="sbtn" id="campNew" title="Begin a fresh campaign">＋ NEW</button>
-    <button class="sbtn" id="campExport" title="Save this campaign as a file">⇩ EXPORT</button>
-    <button class="sbtn" id="campImport" title="Load a campaign file from another device">⇧ IMPORT</button>
-    <button class="sbtn danger" id="campDel" title="Delete this campaign">✕ DELETE</button>
+<!-- ==================== CHAT (always mounted, full screen) ==================== -->
+<div id="app">
+  <header id="topbar">
+    <button class="iconbtn press" id="menuBtn" aria-label="Menu">☰</button>
+    <div id="topTitle">The Arbiter<small id="topSub">the candles are lit</small></div>
+    <button class="iconbtn press" id="actionsBtn" aria-label="Adventure actions">⋯</button>
+  </header>
+  <div id="scroll" aria-live="polite"><div class="thread" id="thread"></div></div>
+  <div id="composer">
+    <div class="field">
+      <textarea id="input" rows="1" placeholder="Say what you do, in plain words…"></textarea>
+    </div>
+    <button id="sendBtn" class="press" aria-label="Send">➤</button>
   </div>
-  <input type="file" id="campFile" accept=".json,application/json" style="display:none">
 </div>
 
-<main>
+<!-- ==================== ACTIONS POPOVER ==================== -->
+<div id="actions">
+  <button class="act press" id="undoBtn"><span class="ic">⎌</span> Undo last turn</button>
+  <button class="act press" id="retellBtn"><span class="ic">↻</span> Retell last reply</button>
+  <button class="act press" id="logBtn"><span class="ic">✎</span> Export chronicle</button>
+</div>
 
-  <!-- ==================== ADVENTURE ==================== -->
-  <section class="page active parch" id="page-adventure">
-    <div id="tome">
-      <div id="scroll" aria-live="polite"></div>
-      <div id="bar">
-        <div id="tray" title="Roll your own dice — the DM sees the result too">
-          <span class="tray-lab">DICE</span>
-          <button class="die-btn" data-die="4">d4</button>
-          <button class="die-btn" data-die="6">d6</button>
-          <button class="die-btn" data-die="8">d8</button>
-          <button class="die-btn" data-die="10">d10</button>
-          <button class="die-btn" data-die="12">d12</button>
-          <button class="die-btn" data-die="20">d20</button>
-          <button class="die-btn" data-die="100">d100</button>
-        </div>
-        <div id="tools">
-          <button class="tbtn" id="undoBtn" title="Take back the table's last action and the DM's reply">⎌ UNDO</button>
-          <button class="tbtn" id="retellBtn" title="Discard the DM's last reply and have it retold">↻ RETELL</button>
-          <button class="tbtn" id="logBtn" title="Download this adventure as a text chronicle">✎ LOG</button>
-        </div>
+<!-- ==================== SCRIM ==================== -->
+<div id="scrim"></div>
+
+<!-- ==================== DRAWER ==================== -->
+<aside id="drawer" aria-label="Menu">
+  <div class="drawer-head">
+    <div class="sigil">THE <span class="amp">✦</span> ARBITER</div>
+    <div class="motto">AN ORACLE OF DUNGEONS &amp; OF DRAGONS</div>
+  </div>
+  <div class="drawer-scroll">
+    <div class="d-label">⚑ Campaign</div>
+    <div class="camp-card">
+      <select id="campSel" title="Switch campaign"></select>
+      <input id="campName" placeholder="name this campaign…" autocomplete="off">
+      <div class="camp-btns">
+        <button class="chip press" id="campNew">＋ NEW</button>
+        <button class="chip press" id="campExport">⇩ EXPORT</button>
+        <button class="chip press" id="campImport">⇧ IMPORT</button>
+        <button class="chip danger press" id="campDel">✕ DELETE</button>
       </div>
-      <div id="quill">
-        <textarea id="input" rows="1" placeholder="Say what you do, in plain words — the Dungeon Master handles everything else. (Enter to send)"></textarea>
-        <button id="sendBtn">SEND</button>
-      </div>
+      <input type="file" id="campFile" accept=".json,application/json" style="display:none">
     </div>
-  </section>
 
-  <!-- ==================== PARTY ==================== -->
-  <section class="page parch" id="page-party">
-    <div class="pad">
-      <div class="sect-title">The Adventuring Party</div>
-      <div class="sect-sub">Every sheet inscribed here is read by the Dungeon Master before each reply. It is the law of your character.</div>
-      <div id="sheetList"></div>
-      <button class="btn" id="addSheet">＋ Inscribe a new character</button>
+    <div class="d-label">☰ The Table</div>
+    <div class="navlist">
+      <button class="navitem press" data-panel="adventure"><span class="ic">⚔</span> Adventure</button>
+      <button class="navitem press" data-panel="party"><span class="ic">☙</span> Party &amp; Characters</button>
+      <button class="navitem press" data-panel="codex"><span class="ic">✦</span> Codex &amp; Lore</button>
+      <button class="navitem press" data-panel="settings"><span class="ic">⚙</span> Sanctum &amp; Settings</button>
     </div>
-  </section>
+  </div>
+</aside>
 
-  <!-- ==================== CODEX ==================== -->
-  <section class="page parch" id="page-codex">
-    <div class="pad">
-      <div class="sect-title">The Codex</div>
-      <div class="sect-sub">World primers, house rules, homebrew items, faction notes, session recaps — anything filed here becomes part of the DM's memory.</div>
-      <div id="codexList"></div>
-      <button class="btn" id="addCodex">＋ Add a codex entry</button>
+<!-- ==================== PARTY PANEL ==================== -->
+<section class="panel" id="panel-party">
+  <div class="panel-head">
+    <button class="iconbtn press panel-back" aria-label="Back">‹</button>
+    <div class="ttl">The Adventuring Party</div>
+  </div>
+  <div class="panel-body"><div class="panel-inner">
+    <div class="sect-sub">Every sheet here is read by the Dungeon Master before each reply — the law of your character.</div>
+    <div id="sheetList"></div>
+    <button class="btn block press" id="addSheet">＋ Inscribe a new character</button>
+  </div></div>
+</section>
+
+<!-- ==================== CODEX PANEL ==================== -->
+<section class="panel" id="panel-codex">
+  <div class="panel-head">
+    <button class="iconbtn press panel-back" aria-label="Back">‹</button>
+    <div class="ttl">The Codex</div>
+  </div>
+  <div class="panel-body"><div class="panel-inner">
+    <div class="sect-sub">World primers, house rules, homebrew, faction notes, recaps — anything filed here joins the DM's memory.</div>
+    <div id="codexList"></div>
+    <button class="btn block press" id="addCodex">＋ Add a codex entry</button>
+  </div></div>
+</section>
+
+<!-- ==================== SANCTUM PANEL ==================== -->
+<section class="panel" id="panel-settings">
+  <div class="panel-head">
+    <button class="iconbtn press panel-back" aria-label="Back">‹</button>
+    <div class="ttl">The Sanctum</div>
+  </div>
+  <div class="panel-body"><div class="panel-inner">
+    <div class="keybox">
+      <div class="kb-t">⚿ ANTHROPIC API KEY</div>
+      <p><strong>Inside Claude.ai:</strong> leave empty — requests are handled for you.</p>
+      <p><strong>On GitHub Pages / any static host:</strong> paste your key below. Get one at <code>console.anthropic.com</code> → API Keys. It lives only in this browser and is sent only to <code>api.anthropic.com</code>.</p>
+      <label class="f" for="apiKey">API KEY</label>
+      <input class="f" type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off">
     </div>
-  </section>
 
-  <!-- ==================== SETTINGS ==================== -->
-  <section class="page parch" id="page-settings">
-    <div class="pad">
-      <div class="sect-title">The Sanctum</div>
-      <div class="sect-sub">The machinery behind the curtain.</div>
-
-      <div class="keybox">
-        <div class="kb-t">⚿ ANTHROPIC API KEY — INSERT HERE</div>
-        <p><strong>Running inside Claude.ai:</strong> leave this field empty — requests are handled for you automatically.</p>
-        <p><strong>Running on GitHub Pages (or any static host):</strong> paste your own key below. Get one at <code>console.anthropic.com</code> → API Keys. The key lives only in this browser and is sent only to <code>api.anthropic.com</code>.</p>
-        <label class="f" for="apiKey">API KEY</label>
-        <input class="f" type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off">
-      </div>
-
+    <div class="card">
       <div class="row">
         <div>
           <label class="f" for="model">MODEL</label>
@@ -608,6 +505,8 @@ footer{
             <option value="D&D 2024 Edition (5.5e)"></option>
           </datalist>
         </div>
+      </div>
+      <div class="row" style="margin-top:4px">
         <div>
           <label class="f" for="tone">CAMPAIGN TONE</label>
           <select class="f" id="tone">
@@ -627,22 +526,19 @@ footer{
           </select>
         </div>
       </div>
-
       <label class="f" for="lines">LINES &amp; VEILS (content the DM must avoid or fade past)</label>
       <textarea class="f" id="lines" placeholder="e.g. no harm to animals; fade to black on torture…"></textarea>
-
-      <p style="margin-top:18px;font-size:14px;color:var(--sepia-faint);font-style:italic">
-        Rules edition, tone, response length, and lines &amp; veils belong to the <strong>current campaign</strong>; the key and model belong to this device.
-        Long campaigns are automatically condensed into a running chronicle behind the scenes, so the DM remembers old sessions without re-reading every word (and your token bill stays small).
-        Campaigns auto-save in this browser. To carry a saga between devices, use ⇩ EXPORT on the campaign bar above,
-        then ⇧ IMPORT the file on the other device — it arrives as its own campaign, story and party intact. Deleting asks twice; exports never contain your key.
-      </p>
     </div>
-  </section>
 
-</main>
-
-<footer>THE TABLE IS SET · THE CANDLES ARE LIT</footer>
+    <p class="fineprint">
+      You play at a real table with real dice and books — <strong>The Arbiter is only the voice of your Dungeon Master.</strong>
+      When a check is called, roll your own dice and tell it the number.<br><br>
+      Edition, tone, response length, and lines &amp; veils belong to the <strong>current campaign</strong>; the key and model belong to this device.
+      Long campaigns are quietly condensed into a running chronicle so the DM remembers old sessions without re-reading every word.
+      Campaigns auto-save in this browser. Use ⇩ EXPORT / ⇧ IMPORT in the menu to carry a saga between devices. Deleting asks twice; exports never contain your key.
+    </p>
+  </div></div>
+</section>
 
 <script>
 /* ================================================================
@@ -665,11 +561,9 @@ const freshCampaign = (name) => ({
   settings: defaultSettings()
 });
 
-/* The vault holds every campaign; `state` always points at the active one. */
 let vault = { activeId:null, global:{ apiKey:"", model:"claude-opus-4-8" }, campaigns:[] };
 let state = null;
 
-/* Guarded persistence: works on GitHub Pages; silently inert where storage is unavailable */
 function persist(){ try{ localStorage.setItem("arbiter-vault", JSON.stringify(vault)); }catch(e){} }
 function restore(){
   try{
@@ -681,7 +575,7 @@ function restore(){
         vault.global = Object.assign({apiKey:"",model:"claude-opus-4-8"}, v.global||{});
       }
     } else {
-      const old = localStorage.getItem("arbiter-campaign");   // migrate v1 single-campaign saves
+      const old = localStorage.getItem("arbiter-campaign");
       if(old){
         const s = JSON.parse(old);
         const c = freshCampaign("First Campaign");
@@ -700,7 +594,6 @@ function restore(){
     const c = freshCampaign("First Campaign");
     vault.campaigns.push(c); vault.activeId = c.id;
   }
-  /* backfill fields added in later versions so old saves keep working */
   for(const c of vault.campaigns){
     if(typeof c.chronicle !== "string") c.chronicle = "";
     if(!Number.isInteger(c.chronicleUpTo) || c.chronicleUpTo < 0) c.chronicleUpTo = 0;
@@ -713,94 +606,81 @@ function restore(){
 restore();
 
 /* ================================================================
-   DM SYSTEM PROMPT — the "fine-tuning" layer
+   DM SYSTEM PROMPT — tuned for a MATERIAL table (real dice & books)
 ================================================================ */
 const SRD_REF = `
-CORE RULES QUICK REFERENCE (authoritative for adjudication):
+CORE RULES QUICK REFERENCE (your private cheat-sheet for fair calls and DCs):
 • Checks: d20 + ability modifier + proficiency (if proficient) vs DC. Modifier = floor((score−10)/2). DC ladder: 5 trivial, 10 easy, 15 moderate, 20 hard, 25 very hard, 30 nearly impossible.
 • Advantage/Disadvantage: roll 2d20 take higher/lower; they don't stack; one of each cancels to a straight roll.
 • Combat round ≈ 6 s. Turn = move + one action + possible bonus action + one reaction per round + free object interaction. Actions: Attack, Cast a Spell, Dash, Disengage, Dodge, Help, Hide, Ready, Search, Use an Object.
 • Attack: d20 + mods vs AC. Natural 20 = hit + double damage dice (crit). Natural 1 = miss. Unseen attacker: advantage; attacking unseen target: disadvantage. Ranged in melee: disadvantage.
 • Cover: half +2 AC/DEX saves, three-quarters +5, total = untargetable.
 • Damage at 0 HP: unconscious + death saves (d20: 10+ success, 3 successes stable, 3 failures dead; nat 20 = regain 1 HP; nat 1 = 2 failures; damage while down = 1 failure, crit = 2). Massive damage (remaining ≥ max HP) = instant death.
-• Conditions: blinded, charmed, deafened, frightened (disadv. on checks/attacks while source in sight; can't willingly approach), grappled (speed 0), incapacitated, invisible, paralyzed (auto-crit within 5 ft), petrified, poisoned (disadv. attacks/checks), prone (melee adv. against, ranged disadv. against; own attacks disadv.), restrained, stunned, unconscious, exhaustion 1–6.
+• Conditions: blinded, charmed, deafened, frightened (disadv. while source in sight; can't willingly approach), grappled (speed 0), incapacitated, invisible, paralyzed (auto-crit within 5 ft), petrified, poisoned (disadv. attacks/checks), prone (melee adv. against, ranged disadv. against; own attacks disadv.), restrained, stunned, unconscious, exhaustion 1–6.
 • Saves: d20 + ability mod + proficiency if proficient, vs DC (spell DC = 8 + prof + casting mod).
 • Rests: short (≥1 h, spend Hit Dice), long (≥8 h, restore HP, half Hit Dice, spell slots).
-• Concentration: one spell at a time; taking damage → CON save DC 10 or half damage, whichever higher.
+• Concentration: one spell at a time; taking damage → CON save DC 10 or half the damage, whichever is higher.
 • Opportunity attacks: leaving reach without Disengage provokes one reaction attack.
 • Skills by ability — STR: Athletics · DEX: Acrobatics, Sleight of Hand, Stealth · INT: Arcana, History, Investigation, Nature, Religion · WIS: Animal Handling, Insight, Medicine, Perception, Survival · CHA: Deception, Intimidation, Performance, Persuasion.`;
 
 const RULES_2024 = `
 D&D 2024 (5.5e) REVISIONS — this campaign uses the 2024 rules; where they differ from the quick reference above, these win:
-• Weapon Mastery: martial classes (Barbarian, Fighter, Monk, Paladin, Ranger, Rogue) attune to a few weapons and get each weapon's mastery property — Cleave (extra swing at a second adjacent target), Graze (ability-mod damage on a miss), Nick (extra light-weapon attack without the bonus action), Push (shove 10 ft), Sap (disadvantage on the target's next attack), Slow (−10 ft speed), Topple (CON save or prone), Vex (advantage on your next attack vs that target). Fighters get the most masteries.
+• Weapon Mastery: martial classes attune to a few weapons and get each weapon's mastery property — Cleave, Graze, Nick, Push, Sap, Slow, Topple, Vex. Fighters get the most.
 • Surprise no longer skips a turn — surprised creatures simply have disadvantage on initiative.
-• Hiding is a DC 15 Stealth check; success grants the Invisible condition until you attack, cast a spell with a verbal component, or are found.
-• Unarmed grapple/shove: on a hit the target makes a STR (Athletics) or DEX (Acrobatics) save vs DC 8 + your STR mod + proficiency — no more opposed checks.
-• Divine Smite is a bonus-action spell now (once per turn, cast on a hit). Monk ki is "Discipline points". Inspiration is "Heroic Inspiration" — reroll any d20, keep the new roll.
+• Hiding is a DC 15 Stealth check; success grants the Invisible condition until you attack, cast a verbal spell, or are found.
+• Unarmed grapple/shove: on a hit the target makes a STR (Athletics) or DEX (Acrobatics) save vs DC 8 + your STR mod + proficiency.
+• Divine Smite is a bonus-action spell (once per turn, on a hit). Monk ki is "Discipline points". Inspiration is "Heroic Inspiration" — reroll any d20, keep the new roll.
 • Drinking a potion is a Bonus Action. Exhaustion: −2 per level on all d20 tests and spell save DCs; death at level 6.
-• Species (not race) carry no ability bonuses; backgrounds grant the +2/+1 ability increases and an origin feat.`;
+• Species (not race) carry no ability bonuses; backgrounds grant the +2/+1 increases and an origin feat.`;
 
-const DM_CORE = `You're the Dungeon Master for a group of friends who are new to D&D. Keep a clear, natural, balanced tone — competent and easy to follow, never theatrical or over-dramatic, and never forced-casual either. You're a good referee and narrator who keeps the game moving. The campaign's edition, tone, and table preferences are in the CAMPAIGN SETTINGS block at the end of this prompt — honor them.
+const DM_CORE = `You are the Dungeon Master — the living voice at a real tabletop. The players are in the room together with physical dice, character sheets, and the rulebooks. You are ONLY the DM's voice: you narrate the world, run NPCs, and adjudicate outcomes. You do NOT roll dice, keep score in a widget, or run any interface — the table handles all of that materially. Keep a clear, natural, balanced tone — competent and easy to follow, never theatrical or over-dramatic, and never forced-casual. Honor the CAMPAIGN SETTINGS block at the end of this prompt.
 
 HOW YOU WRITE
-- Plain and clear. Describe scenes and outcomes in straightforward prose. No purple descriptions, no dramatic flourishes, no fake-casual slang or forced jokes — just tell them what's happening, with a concrete detail or two.
+- Plain and clear. Describe scenes and outcomes in straightforward prose. No purple description, no dramatic flourishes, no fake-casual slang. Just tell them what's happening, with a concrete detail or two.
 - Follow the reply-length guidance in CAMPAIGN SETTINGS.
-- Don't end every turn with a menu of options — that reads as robotic. Usually just describe the situation and ask what they want to do. Offer a suggestion or two only when someone seems genuinely stuck.
-- Give NPCs distinct voices and put their dialogue in quotes; let them be people, not quest-dispensers.
-- Never decide your players' actions, choices, or dialogue for them. Set the scene, then wait for them.
+- Don't end every turn with a menu of options — usually just describe the situation and ask what they want to do. Offer a suggestion or two only when someone seems genuinely stuck.
+- Give NPCs distinct voices; put their dialogue in quotes. Let them be people, not quest-dispensers.
+- Never decide the players' actions, choices, or dialogue for them. Set the scene, then wait.
 
-THIS IS D&D — THE DICE DECIDE
-- When someone tries something with real stakes and a real chance of failing, call for a roll. Skip rolls for the trivial (opening an unlocked door) and the impossible — only roll when the outcome's actually in question. Don't roll for everything; don't roll for nothing.
-- To ask for a d20 roll, work out the math yourself and drop a tag on its OWN LINE, then STOP — do not write what happens next, do not narrate the outcome. Wait for the result:
-  [[ROLL type="Stealth check" who="Kara" mod="+5" dc="15" mode="normal"]]
-  * type — the check, save, or attack: "Perception check", "Dexterity save", "Attack — shortsword", "Persuasion check"
-  * who — the character's name; for a group check ("everyone stay quiet") drop one tag per person
-  * mod — the total bonus you figured from their sheet (pick a fair one if they have no sheet: about +5 if they're great at it, +3 good, +0 average, -1 bad). Players never do math.
-  * dc — your SECRET target number they don't see (for an attack this is the enemy's AC; for a save it's the effect's DC). Leave it out only if the roll is pure color.
-  * mode — "advantage" (roll twice keep the best), "disadvantage" (keep the worst), or "normal", depending on the fiction.
-- For damage or any non-d20 dice, use a dice tag instead — same rules, its own line, then stop:
-  [[ROLL type="Damage — greataxe" who="Borin" dice="1d12+3"]]
-  Call for damage right after a hit lands (narrate the hit first if you like, then drop the damage tag). Never invent dice totals yourself.
-- The table taps the die to roll; you get the number back, then you narrate what it means. Let the dice genuinely decide — high rolls go well, low rolls go badly, and sometimes the party simply fails. That's expected. Treat natural 20s as a notable success and natural 1s as a notable setback.
-- FAIL FORWARD — a failed roll complicates the story, it never stalls it. Prefer "you succeed at a cost" or "you fail and something new happens" over "nothing happens, try again." Use the margin: missing the DC by 1–2 is a near thing (success with a snag, or a graceful setback); missing by 5+ goes properly wrong. Beating the DC by 5+ is a clean, stylish success. Never let one failed roll dead-end the adventure — there is always another way in.
-- Lines like "[TABLE ROLL] ..." are dice a player rolled on their own initiative from the dice tray. Acknowledge them lightly and weave the number in if a roll was plausibly pending; otherwise treat it as table chatter and keep the scene moving — never scold anyone for rolling.
-- Combat: call for attack rolls, damage, and saves with tags. Describe wounds in plain words ("that opens a gash across its flank, and it's slowing down") — don't recite the monster's hit-point numbers. Keep it fast and cinematic, one clear beat at a time. Privately track enemy HP, conditions (grappled, prone, frightened…), and positions — and re-check them every round; a dropped condition is the most common DM error. When a character is downed, prefer an interesting turn — captured, dragged to safety, a rival intervenes — over an abrupt "you die."
-- NEVER fake a roll or decide its result before the die lands. If you catch yourself about to say "you succeed" before asking for the check — stop, ask for the check.
+DICE HAPPEN AT THE TABLE — NOT HERE
+- The players roll their own physical dice. When something has real stakes and a real chance of failing, ASK them out loud for the roll, name it plainly, and tell them what to add — then STOP and wait for them to report the number.
+  Examples: "Give me a Dexterity (Stealth) check — roll a d20 and add your Stealth." · "Roll a Wisdom saving throw." · "Make an attack roll against the ogre." · "Everyone roll initiative."
+- Decide the DC or target number privately in your head; don't announce it. Hold it, then judge the result the player reports against it.
+- When they tell you the result ("I got 17", "nat 20!", "rolled a 6, plus 3 is 9"), narrate what happens. If they only give a total, trust it. If they mention the raw d20, treat a natural 20 as a notable success and a natural 1 as a notable setback.
+- For damage, tell them what to roll ("roll your greatsword damage — 2d6 plus your Strength") and wait for the total. Never invent their numbers.
+- If a player forgets to roll or just declares an action with stakes, prompt them for the roll rather than resolving it yourself.
+- NEVER emit brackets, tags, tables, or dice-widget syntax of any kind. Never write "[[ROLL ...]]" or "(rolling…)". Speak like a person at the table. You never produce a number that a die should produce.
+- FAIL FORWARD — a failed roll complicates the story, it never stalls it. Prefer "you succeed at a cost" or "you fail and something new happens" over "nothing happens, try again." Use the margin: missing by 1–2 is a near thing; missing by 5+ goes properly wrong; beating the DC by 5+ is a clean, stylish success. One failed roll must never dead-end the adventure.
+- Combat: ask for attack rolls, damage, and saves as above; describe wounds in plain words ("that opens a gash across its flank, and it's slowing") — don't recite monster hit-point numbers. Keep it fast and cinematic, one clear beat at a time. Privately track enemy HP, conditions, and positions, and re-check them every round — a dropped condition is the most common DM error. When a character drops, prefer an interesting turn (captured, dragged to safety, a rival intervenes) over an abrupt "you die."
 
 PACING AND SPOTLIGHT
-- Alternate the beats: after something goes well, let a complication land; after a setback, offer a spark of hope. All-good is boring; all-bad is miserable.
-- Cut dead air. When a scene has given what it has to give — travel, shopping, a finished conversation — summarize it in a sentence and move to the next interesting decision.
-- With several characters, rotate the spotlight. If someone hasn't acted in a while, hand them an easy in-character opening ("Kara, you're closest to the door when the knock comes").
+- Alternate the beats: after something goes well, let a complication land; after a setback, offer a spark of hope.
+- Cut dead air. When a scene has given what it has to give, summarize it in a sentence and move to the next interesting decision.
+- With several characters, rotate the spotlight; hand a quiet player an easy in-character opening.
 
 WHEN PLAYERS DO SOMETHING UNEXPECTED
-- Go with it. Players trying things you didn't plan for is a normal part of the game, not a problem. Never freeze, never say "you can't do that," and never step out of character to explain rules or limits.
-- Use "yes, and" or "no, but" rather than a flat no. If an idea is clever, let it work (Rule of Cool). If the outcome is uncertain, call for a check and let the dice decide. If it's genuinely impossible in the world, let the world respond naturally — a guard refuses, the wall holds — inside the fiction, not as an out-of-character explanation.
-- If you're unsure of a rule or a piece of lore, don't stall and don't state a wrong answer confidently — quietly look it up (web search) or make a fair, quick call and keep the game moving.
+- Go with it. Never freeze, never say "you can't do that," never step out of character to explain rules. Use "yes, and" or "no, but" rather than a flat no. If an idea is clever, let it work (Rule of Cool). If uncertain, ask for a check. If genuinely impossible, let the world respond naturally, inside the fiction.
+- Unsure of a rule or lore? Don't stall or state a wrong answer confidently — quietly look it up (web search) or make a fair, quick call and keep the game moving.
 
 BEGINNER TABLE
-- Assume zero experience. Players never track numbers, do their own math, or name rules — you handle all of it behind the curtain. Explain a rule only in one quick sentence, only right when it comes up.
-- No character yet? Offer a few ready-made ones in plain fantasy terms (the tough knight, the sneaky one who picks locks, the wizard who casts spells) or build one together with two or three fun questions — never a stat questionnaire. Then tell them to jot it in the Party tab so you'll remember it.
-- If someone goes quiet or seems unsure, give them an easy in-character opening to step in. Keep everyone involved.
+- Assume little experience. When you ask for a roll, name the die and what to add so nobody has to hunt through a book. Explain a rule only in one quick sentence, right when it comes up.
+- No character yet? Offer a few ready-made ones in plain fantasy terms (the tough knight, the sneaky lockpick, the wizard) or build one together with two or three fun questions — never a stat questionnaire. Then tell them to jot it in the Party tab so you'll remember it.
 
 KEEPING IT STRAIGHT
-- The world stays consistent — names, places, promises, wounds, gold, who's holding what. Slip up? Just fix it naturally and move on.
+- The world stays consistent — names, places, promises, wounds, gold, who's holding what. Slip up? Fix it naturally and move on.
 - The character sheets in CAMPAIGN SETTINGS are the truth about the party. When something changes (took a hit, found loot, spent gold), mention it once in passing so they can update their sheet.
 - A CHRONICLE block may summarize older sessions — everything in it is canon; never contradict it.
 
 NAMING — MAKE EVERYTHING UNIQUE
-Every name you invent (places, people, taverns, factions, items, gods) must be genuinely distinctive, not the generic fantasy default. This matters a lot; ordinary names make the whole world feel canned.
-- BANNED outright: the words ashen, grey/gray, old, whisper/whispering, veil, vale, moor, hollow, thorn, gloom, shadow, mist, ember, raven, black-/-fell, -wood/-woods, -haven, -reach, -fall, -crest, -watch, -hold, -mere, -wick as name components; and the "Adjective + Nature-Noun" template itself (Whispering Woods, Ashen Moor, Grey Roads, Silent Peaks). If a name you're about to write follows that pattern or uses those words, discard it and make another.
-- No alliteration, no personified-nature phrasing, no melancholy-mood-word filler. Avoid anything you'd expect to see in a stock fantasy name generator.
-- Instead, build names one of these ways: (a) invent a short fictional language with its own consistent sounds and derive names from it (e.g. a region where names favor hard consonants and -ok/-ushka endings); (b) name things after concrete in-world facts — who founded it, what happened there, what's made or mined there, a local animal or crop; (c) borrow phonetics from a real but less-mined language family (Basque, Finnish, Nahuatl, Georgian, Welsh, Malay) and reshape them so they're original, never copied. Keep them pronounceable and fitting the campaign's tone.
-- Give recurring names a one-line reason for existing when it's natural ("Tavriz — named for the salt-trader who drowned building the causeway"). Deliberately vary your choices: pick unexpected sounds, uneven syllable counts, names that don't rhyme or pattern-match each other. Variety across the world matters as much as any single name.
+Every name you invent (places, people, taverns, factions, items, gods) must be genuinely distinctive, not the generic fantasy default.
+- BANNED outright: ashen, grey/gray, old, whisper/whispering, veil, vale, moor, hollow, thorn, gloom, shadow, mist, ember, raven, black-/-fell, -wood/-woods, -haven, -reach, -fall, -crest, -watch, -hold, -mere, -wick as name components; and the "Adjective + Nature-Noun" template itself. If a name follows that pattern or uses those words, discard it and make another.
+- No alliteration, no personified-nature phrasing, no melancholy-mood-word filler.
+- Build names instead by: (a) a short invented language with consistent sounds; (b) concrete in-world facts — who founded it, what happened there, what's made or mined there; (c) reshaped phonetics from a less-mined real language family (Basque, Finnish, Nahuatl, Georgian, Welsh, Malay). Keep them pronounceable and fitting the tone, with varied sounds and syllable counts.
 
-Formatting: light touch. Plain paragraphs, NPC dialogue in quotes, maybe an occasional **bold name**. No headers, no bullet-point lists, no stage directions, no section labels. Just talk like a person at the table.
+Formatting: light touch. Plain paragraphs, NPC dialogue in quotes, maybe an occasional **bold name**. No headers, no bullet lists, no stage directions, no section labels. Just talk like a person at the table.
 
-The rules below are your private cheat-sheet for making fair calls and picking DCs — never quote them at the players.`;
+The rules below are your private reference for fair calls and DCs — never quote them at the players.`;
 
-/* System prompt is sent as two blocks: the big stable core (marked for API
-   prompt-caching, ~90% cheaper on repeat turns) and the small per-campaign
-   block that changes as the table edits sheets and codex entries. */
 function buildSystemBlocks(){
   const s = state.settings;
   const sheets = state.sheets.filter(x=>x.name.trim()).map(x=>
@@ -864,163 +744,35 @@ function md(src){
    CHAT RENDERING
 ================================================================ */
 const scrollEl = document.getElementById("scroll");
-const rubricFor = {dm:"DUNGEON MASTER", player:"THE TABLE", note:"THE SCRIBE"};
+const threadEl = document.getElementById("thread");
+const rubricFor = {dm:"Dungeon Master", player:"You", note:"The Table", sys:"The Table"};
 
-/* ---- DICE ---- */
-function d(faces){ return 1 + Math.floor(Math.random()*faces); }
-function d20(){ return d(20); }
-function parseDiceExpr(str){
-  const m = String(str||"").trim().match(/^(\d{1,2})\s*d\s*(\d{1,4})\s*([+-]\s*\d+)?$/i);
-  if(!m) return null;
-  return { n: Math.min(Math.max(parseInt(m[1],10),1),20),
-           faces: Math.min(Math.max(parseInt(m[2],10),2),1000),
-           mod: m[3] ? parseInt(m[3].replace(/\s/g,""),10) : 0 };
-}
-function computeRoll(roll){
-  const expr = parseDiceExpr(roll.dice);
-  if(expr && !(expr.n===1 && expr.faces===20)){
-    /* damage / utility dice: NdM+K, each die truly random */
-    const dice = Array.from({length:expr.n}, ()=>d(expr.faces));
-    return { kind:"dice", dice, faces:expr.faces, mod:expr.mod,
-             total: dice.reduce((a,b)=>a+b,0) + expr.mod,
-             expr: `${expr.n}d${expr.faces}${expr.mod ? (expr.mod>0?"+":"")+expr.mod : ""}` };
-  }
-  const mode = (roll.mode||"normal").toLowerCase();
-  const mod = (expr ? expr.mod : 0) || parseInt(String(roll.mod==null?0:roll.mod).replace(/[^0-9+\-]/g,""),10) || 0;
-  let a = d20(), b = d20(), nat, pair = null;
-  if(mode.startsWith("adv")){ nat = Math.max(a,b); pair=[a,b]; }
-  else if(mode.startsWith("dis")){ nat = Math.min(a,b); pair=[a,b]; }
-  else { nat = a; }
-  const dc = (roll.dc===undefined || roll.dc==="" || roll.dc==null) ? null : parseInt(roll.dc,10);
-  const total = nat + mod;
-  return { kind:"d20", nat, mod, total, pair,
-           mode: mode.startsWith("adv")?"advantage":mode.startsWith("dis")?"disadvantage":"normal",
-           dc: isNaN(dc)?null:dc, crit: nat===20, fumble: nat===1,
-           outcome: (dc==null||isNaN(dc)) ? null : (total>=dc ? "success":"fail") };
-}
-/* Pull [[ROLL ...]] tags out of a DM reply → {narration, rolls[]} */
-function parseRolls(text){
-  const tag = /\[\[\s*ROLL\b([^\]]*)\]\]/gi;
-  const rolls = [];
-  const attr = (blob,key)=>{
-    let m = blob.match(new RegExp(key+'\\s*=\\s*"([^"]*)"','i'))
-         || blob.match(new RegExp(key+"\\s*=\\s*'([^']*)'",'i'))
-         || blob.match(new RegExp(key+'\\s*=\\s*([^\\s\\]]+)','i'));
-    return m ? m[1].trim() : "";
-  };
-  let narration = text.replace(tag,(_,blob)=>{
-    rolls.push({ type:attr(blob,"type")||"Check", who:attr(blob,"who"),
-                 mod:attr(blob,"mod")||"0", dc:attr(blob,"dc"),
-                 dice:attr(blob,"dice"),
-                 mode:attr(blob,"mode")||"normal", result:null });
-    return "";
-  }).replace(/\n{3,}/g,"\n\n").trim();
-  return { narration, rolls };
-}
-function rollResultLine(roll){
-  const r = roll.result;
-  if(r.kind==="dice"){
-    return `${roll.who||"They"} — ${roll.type}: ${r.expr} [${r.dice.join(", ")}] = ${r.total}`;
-  }
-  const dice = r.pair ? `d20 [${r.pair.join(", ")}] keep ${r.nat} (${r.mode})` : `d20 ${r.nat}`;
-  const modS = (r.mod>=0?"+":"")+r.mod;
-  let s = `${roll.who||"They"} — ${roll.type}: ${dice}, ${modS} = ${r.total}`;
-  if(r.dc!=null) s += `, vs DC ${r.dc} => ${r.outcome.toUpperCase()}`;
-  if(r.crit) s += " [NATURAL 20!]";
-  if(r.fumble) s += " [NATURAL 1!]";
-  return s;
-}
+function atBottom(){ return scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 80; }
+function toBottom(){ scrollEl.scrollTop = scrollEl.scrollHeight; }
 
-/* ---- RENDER ---- */
-function rollCardHTML(roll, mi, ri){
-  const r = roll.result;
-  const modS = ((parseInt(String(roll.mod).replace(/[^0-9+\-]/g,""),10)||0)>=0?"+":"")
-             + (parseInt(String(roll.mod).replace(/[^0-9+\-]/g,""),10)||0);
-  const modeBadge = /adv/i.test(roll.mode) ? `<span class="mode">advantage</span>`
-                  : /dis/i.test(roll.mode) ? `<span class="mode dis">disadvantage</span>` : "";
-  const who = roll.who ? `<span class="who">${escapeHTML(roll.who)}</span>` : "";
-  const dExpr = parseDiceExpr(roll.dice);
-  const isDice = dExpr && !(dExpr.n===1 && dExpr.faces===20);
-  if(!r){
-    const hint = isDice ? `${dExpr.n}d${dExpr.faces}${dExpr.mod ? (dExpr.mod>0?"+":"")+dExpr.mod : ""} · tap to roll`
-                        : `bonus ${modS} · tap to roll`;
-    const face = isDice ? `d${dExpr.faces}` : "d20";
-    return `<div class="rollcard" data-mi="${mi}" data-ri="${ri}">
-      <div class="what"><b>${escapeHTML(roll.type)}</b> ${modeBadge}${who}<span class="who">${hint}</span></div>
-      <button class="d20btn roll-go" data-mi="${mi}" data-ri="${ri}" aria-label="Roll the dice">${face}</button>
-    </div>`;
-  }
-  if(r.kind==="dice"){
-    return `<div class="rollcard" data-mi="${mi}" data-ri="${ri}">
-      <div class="what"><b>${escapeHTML(roll.type)}</b>${who}</div>
-      <div class="rollres">
-        <div class="pip">${r.total}</div>
-        <div class="breakdown">${r.expr} = <b>${r.total}</b><small>dice: ${r.dice.join(" · ")}</small></div>
-      </div>
-    </div>`;
-  }
-  const pipCls = r.crit?"pip crit":r.fumble?"pip fumble":"pip";
-  const kept = r.pair ? `<small>rolled ${r.pair.join(" & ")} · kept ${r.nat} (${r.mode})</small>` : "";
-  const flag = r.crit?`<small>Natural 20 — critical success.</small>`:r.fumble?`<small>Natural 1 — critical failure.</small>`:"";
-  return `<div class="rollcard" data-mi="${mi}" data-ri="${ri}">
-    <div class="what"><b>${escapeHTML(roll.type)}</b>${who}</div>
-    <div class="rollres">
-      <div class="${pipCls}">${r.nat}</div>
-      <div class="breakdown">d20 ${r.nat} ${(r.mod>=0?"+ ":"− ")+Math.abs(r.mod)} = <b>${r.total}</b>${kept}${flag}</div>
-    </div>
-  </div>`;
+function entryEl(m){
+  const d = document.createElement("div");
+  d.className = "entry "+(m.role||"dm");
+  d.innerHTML = `<div class="rubric">${rubricFor[m.role]||""}</div>`
+    + `<div class="bubble"><div class="body-t">${m.text?md(m.text):""}</div></div>`;
+  return d;
 }
 function renderAll(){
-  scrollEl.innerHTML = "";
+  threadEl.innerHTML = "";
   if(!state.messages.length){
-    scrollEl.innerHTML = `<div class="invite">
+    threadEl.innerHTML = `<div class="invite">
       <div class="init">N</div>
       <h2>o experience required.</h2>
-      <p>Tell the DM what kind of world you want — a haunted swamp, a city of thieves, "surprise me," whatever. Then just say what your character tries to do, in plain words. No rulebook, no math.</p>
-      <p>When something's risky, the DM will ask for a roll — you tap the die, and the number decides how it goes. That's the whole game.</p>
-      <div class="hint">NO CHARACTER YET? JUST START — THE DM WILL WALK YOU THROUGH IT · SHEETS UNDER ☙ PARTY · KEY &amp; DIALS UNDER ⚙ SANCTUM<br>ROLL YOUR OWN DICE FROM THE TRAY BELOW · ⎌ UNDO A TURN · ↻ RETELL A REPLY · ✎ EXPORT THE LOG</div>
+      <p>Tell the DM what kind of world you want — a haunted swamp, a city of thieves, "surprise me," whatever. Then just say what your character does, in plain words.</p>
+      <p>You play at a real table: when the DM asks for a check, roll your own dice and tell it the number. The Arbiter is only the voice.</p>
+      <div class="hint">TAP ☰ FOR PARTY SHEETS, CODEX &amp; SETTINGS · ⋯ FOR UNDO, RETELL &amp; EXPORT</div>
     </div>`;
     return;
   }
-  state.messages.forEach((m,i)=>scrollEl.appendChild(entryEl(m,i)));
-  scrollEl.scrollTop = scrollEl.scrollHeight;
+  state.messages.forEach(m=>threadEl.appendChild(entryEl(m)));
+  toBottom();
 }
-function entryEl(m, mi){
-  const d = document.createElement("div");
-  d.className = "entry "+m.role;
-  let inner = `<div class="rubric">${rubricFor[m.role]||""}</div>`;
-  if(m.text) inner += `<div class="body-t">${md(m.text)}</div>`;
-  if(m.rolls && m.rolls.length){
-    inner += `<div class="rolls">`+m.rolls.map((r,ri)=>rollCardHTML(r,mi,ri)).join("")+`</div>`;
-  }
-  d.innerHTML = inner;
-  return d;
-}
-function pushMsg(m){ state.messages.push(m); scrollEl.appendChild(entryEl(m, state.messages.length-1)); scrollEl.scrollTop = scrollEl.scrollHeight; persist(); return state.messages.length-1; }
-
-/* click a die → roll it, repaint, and if the whole batch is done, let the DM react */
-scrollEl.addEventListener("click", e=>{
-  const btn = e.target.closest(".roll-go");
-  if(!btn || btn.disabled) return;
-  const mi = +btn.dataset.mi, ri = +btn.dataset.ri;
-  const msg = state.messages[mi]; if(!msg || !msg.rolls || !msg.rolls[ri]) return;
-  const roll = msg.rolls[ri];
-  if(roll.result) return;
-  btn.classList.add("rolling"); btn.disabled = true;
-  setTimeout(()=>{
-    roll.result = computeRoll(roll);
-    persist();
-    const card = scrollEl.querySelector(`.rollcard[data-mi="${mi}"][data-ri="${ri}"]`);
-    if(card) card.outerHTML = rollCardHTML(roll, mi, ri);
-    if(msg.rolls.every(r=>r.result)) continueAfterRolls(mi);
-  }, 480);
-});
-function continueAfterRolls(mi){
-  const msg = state.messages[mi];
-  msg.resultsSent = true;   // marks that a dice-result user-turn should follow this dm message
-  persist();
-  callDM();
-}
+function pushMsg(m){ state.messages.push(m); threadEl.appendChild(entryEl(m)); toBottom(); persist(); return state.messages.length-1; }
 
 /* ================================================================
    API
@@ -1030,15 +782,9 @@ function apiHistory(){
   const start = Math.min(state.chronicleUpTo||0, state.messages.length);
   for(let i=start;i<state.messages.length;i++){
     const m = state.messages[i];
-    if(m.role==="dm"){
-      hist.push({role:"assistant", content:(m.raw||m.text||"").trim() || "(...)"});
-      if(m.rolls && m.rolls.length && m.rolls.every(r=>r.result)){
-        const lines = m.rolls.map(rollResultLine).join("\n");
-        hist.push({role:"user", content:"[DICE RESULTS — these are what the table just rolled; narrate what happens, and don't ask for a re-roll]\n"+lines});
-      }
-    }
+    if(m.role==="dm") hist.push({role:"assistant", content:(m.raw||m.text||"").trim() || "(...)"});
     else if(m.role==="player") hist.push({role:"user", content:m.text});
-    else if(m.role==="note") hist.push({role:"user", content:"[TABLE ROLL] "+m.text.replace(/\*\*/g,"")});
+    else if(m.role==="note"||m.role==="sys") hist.push({role:"user", content:"[TABLE] "+(m.text||"").replace(/\*\*/g,"")});
   }
   const merged = [];
   for(const h of hist){
@@ -1049,8 +795,6 @@ function apiHistory(){
   while(win.length && win[0].role!=="user") win.shift();
   return win;
 }
-
-/* ---- API plumbing ---- */
 function apiHeaders(){
   const headers = {"Content-Type":"application/json"};
   const key = (vault.global.apiKey||"").trim();
@@ -1062,7 +806,6 @@ function apiHeaders(){
   return headers;
 }
 function webSearchTool(){
-  /* the newest search tool where the model supports it; basic variant for Haiku */
   const basic = /haiku/i.test(vault.global.model||"");
   return { type: basic ? "web_search_20250305" : "web_search_20260209", name:"web_search", max_uses:3 };
 }
@@ -1071,7 +814,6 @@ function maxTokensFor(){
   return v==="brief" ? 600 : v==="cinematic" ? 1800 : 1100;
 }
 async function anthropicFetch(body, signal){
-  /* one retry on overload (529) or a transient network hiccup */
   for(let attempt=0;;attempt++){
     try{
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1085,7 +827,6 @@ async function anthropicFetch(body, signal){
     }
   }
 }
-/* Read an SSE stream, calling onText with the accumulated text as it grows */
 async function readSSE(res, onText){
   const reader = res.body.getReader();
   const dec = new TextDecoder();
@@ -1113,20 +854,19 @@ async function readSSE(res, onText){
 let currentAbort = null;
 function setSending(on){
   const btn = document.getElementById("sendBtn");
-  if(on){ btn.textContent = "STOP"; btn.classList.add("halt"); btn.disabled = false; }
-  else { btn.textContent = "SEND"; btn.classList.remove("halt"); btn.disabled = false; currentAbort = null; }
+  if(on){ btn.textContent = "■"; btn.classList.add("halt"); btn.setAttribute("aria-label","Stop"); }
+  else { btn.textContent = "➤"; btn.classList.remove("halt"); btn.setAttribute("aria-label","Send"); currentAbort = null; }
 }
 
 async function callDM(){
   if(currentAbort) return;
   currentAbort = new AbortController();
   setSending(true);
-  const ponder = document.createElement("div");
-  ponder.className = "entry dm";
-  ponder.innerHTML = `<div class="rubric">DUNGEON MASTER</div><div class="body-t ponder">thinking</div>`;
-  scrollEl.appendChild(ponder); scrollEl.scrollTop = scrollEl.scrollHeight;
-  const live = ponder.querySelector(".body-t");
-  const tagCut = /\[\[\s*ROLL\b[^\]]*\]\]/gi;
+  const wrap = document.createElement("div");
+  wrap.className = "entry dm";
+  wrap.innerHTML = `<div class="rubric">Dungeon Master</div><div class="bubble"><div class="body-t ponder">thinking</div></div>`;
+  threadEl.appendChild(wrap); toBottom();
+  const live = wrap.querySelector(".body-t");
   let rawSoFar = "";
 
   try{
@@ -1146,13 +886,13 @@ async function callDM(){
     let raw;
     const ct = res.headers.get("content-type") || "";
     if(res.body && ct.includes("text/event-stream")){
+      const stick = ()=>atBottom();
       raw = await readSSE(res, txt=>{
         rawSoFar = txt;
+        const keep = stick();
         live.classList.remove("ponder");
-        /* hide roll tags (and any half-written tag) while the ink is still wet */
-        const preview = txt.replace(tagCut,"").replace(/\[\[[^\]]*$/,"");
-        live.innerHTML = md(preview) + `<span class="cursor"></span>`;
-        scrollEl.scrollTop = scrollEl.scrollHeight;
+        live.innerHTML = md(txt) + `<span class="cursor"></span>`;
+        if(keep) toBottom();
       });
     } else {
       const data = await res.json();
@@ -1160,49 +900,41 @@ async function callDM(){
       raw = (data.content||[]).map(b=>b.type==="text"?b.text:"").filter(Boolean).join("\n");
     }
     raw = (raw||"").trim();
-    ponder.remove();
+    wrap.remove();
     if(!raw) throw new Error("Empty reply from the model.");
-    const {narration, rolls} = parseRolls(raw);
-    pushMsg({role:"dm", text:narration, raw, rolls});
-    /* if rolls were requested, we STOP here and wait for the table to tap the dice */
+    pushMsg({role:"dm", text:raw, raw});
     maybeChronicle();
   }catch(err){
-    ponder.remove();
+    wrap.remove();
     if(err && err.name==="AbortError"){
-      /* the table pulled the reins — keep whatever was already spoken */
       const partial = rawSoFar.trim();
-      if(partial){
-        const {narration, rolls} = parseRolls(partial);
-        pushMsg({role:"dm", text:narration, raw:partial, rolls});
-      }
+      if(partial) pushMsg({role:"dm", text:partial, raw:partial});
     } else {
       const d = document.createElement("div");
       d.className = "entry";
-      d.innerHTML = `<div class="body-t errline">⚠ Couldn't reach the DM: ${escapeHTML(err.message)}.
-        ${(vault.global.apiKey||"").trim()?"":"If you're running this outside Claude.ai, add your API key in the ⚙ Sanctum tab."}</div>`;
-      scrollEl.appendChild(d);
+      d.innerHTML = `<div class="bubble"><div class="errline">⚠ Couldn't reach the DM: ${escapeHTML(err.message)}.
+        ${(vault.global.apiKey||"").trim()?"":" If you're running this outside Claude.ai, add your API key in the Sanctum."}</div></div>`;
+      threadEl.appendChild(d); toBottom();
     }
   }
   setSending(false);
 }
 
 /* ================================================================
-   CHRONICLE — old messages get condensed into a running summary so
-   long campaigns stay coherent AND cheap (fewer tokens per request)
+   CHRONICLE
 ================================================================ */
 let chronicling = false;
 async function maybeChronicle(){
   const c = state;
   const start = c.chronicleUpTo||0;
   if(chronicling || c.messages.length - start <= 56) return;
-  const cut = c.messages.length - 24;              /* the recent scene stays verbatim */
+  const cut = c.messages.length - 24;
   if(cut <= start) return;
   chronicling = true;
   try{
     const lines = c.messages.slice(start, cut).map(m=>{
-      let t = (m.role==="dm"?"DM: ":m.role==="player"?"PLAYERS: ":"TABLE: ") + (m.text||"");
-      if(m.rolls && m.rolls.length && m.rolls.every(r=>r.result)) t += "\n" + m.rolls.map(rollResultLine).join("\n");
-      return t;
+      const who = m.role==="dm"?"DM: ":m.role==="player"?"PLAYERS: ":"TABLE: ";
+      return who + (m.text||"");
     }).join("\n\n");
     const res = await anthropicFetch({
       model: vault.global.model,
@@ -1217,7 +949,7 @@ async function maybeChronicle(){
         c.chronicle = summary; c.chronicleUpTo = cut; persist();
       }
     }
-  }catch(e){ /* the chronicle is a luxury — it must never break the game */ }
+  }catch(e){}
   chronicling = false;
 }
 
@@ -1226,7 +958,7 @@ async function maybeChronicle(){
 ================================================================ */
 const input = document.getElementById("input");
 function send(){
-  if(currentAbort) return;                      /* the DM is mid-sentence */
+  if(currentAbort) return;
   const t = input.value.trim();
   if(!t) return;
   input.value = ""; input.style.height = "auto";
@@ -1234,24 +966,54 @@ function send(){
   callDM();
 }
 document.getElementById("sendBtn").addEventListener("click",()=>{
-  if(currentAbort) currentAbort.abort();        /* SEND doubles as STOP while streaming */
+  if(currentAbort) currentAbort.abort();
   else send();
 });
 input.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
 input.addEventListener("input",()=>{ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,130)+"px"; });
 
 /* ================================================================
-   DICE TRAY + TABLE TOOLS
+   DRAWER · PANELS · ACTIONS
 ================================================================ */
-document.getElementById("tray").addEventListener("click",e=>{
-  const b = e.target.closest(".die-btn"); if(!b) return;
-  const faces = +b.dataset.die;
-  const v = d(faces);
-  pushMsg({role:"note", text:`The table rolls a d${faces}: **${v}**${faces===20&&v===20?" — natural 20!":faces===20&&v===1?" — natural 1…":""}`});
-});
+const scrim = document.getElementById("scrim");
+const drawer = document.getElementById("drawer");
+const actions = document.getElementById("actions");
+let openThing = null;   /* 'drawer' | 'actions' | null */
 
-/* Take back the table's last action (and everything the DM said after it) */
+function closeOverlays(){
+  drawer.classList.remove("show");
+  actions.classList.remove("show");
+  scrim.classList.remove("show");
+  openThing = null;
+}
+function openDrawer(){ closeActions(); drawer.classList.add("show"); scrim.classList.add("show"); openThing="drawer"; }
+function closeDrawer(){ drawer.classList.remove("show"); if(openThing==="drawer"){ scrim.classList.remove("show"); openThing=null; } }
+function openActions(){ actions.classList.add("show"); scrim.classList.add("show"); openThing="actions"; }
+function closeActions(){ actions.classList.remove("show"); if(openThing==="actions"){ scrim.classList.remove("show"); openThing=null; } }
+
+document.getElementById("menuBtn").addEventListener("click",openDrawer);
+document.getElementById("actionsBtn").addEventListener("click",()=>{ openThing==="actions"?closeActions():openActions(); });
+scrim.addEventListener("click",closeOverlays);
+
+function openPanel(name){
+  closeOverlays();
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("open"));
+  if(name==="party") renderSheets();
+  if(name==="codex") renderCodex();
+  if(name==="settings") loadSettings();
+  if(name!=="adventure"){
+    const p = document.getElementById("panel-"+name);
+    if(p) p.classList.add("open");
+  }
+}
+document.querySelectorAll(".navitem").forEach(b=>b.addEventListener("click",()=>openPanel(b.dataset.panel)));
+document.querySelectorAll(".panel-back").forEach(b=>b.addEventListener("click",()=>{
+  b.closest(".panel").classList.remove("open");
+}));
+
+/* chat actions */
 document.getElementById("undoBtn").addEventListener("click",()=>{
+  closeActions();
   if(currentAbort) currentAbort.abort();
   if(!state.messages.length) return;
   let i = state.messages.length - 1;
@@ -1260,29 +1022,21 @@ document.getElementById("undoBtn").addEventListener("click",()=>{
   state.chronicleUpTo = Math.min(state.chronicleUpTo, state.messages.length);
   persist(); renderAll();
 });
-
-/* Discard the DM's last reply and have the scene retold */
 document.getElementById("retellBtn").addEventListener("click",()=>{
+  closeActions();
   if(currentAbort) return;
   if(!state.messages.length || state.messages[state.messages.length-1].role !== "dm") return;
   state.messages.pop();
   persist(); renderAll();
   callDM();
 });
-
-/* Download the whole adventure as a markdown chronicle */
 document.getElementById("logBtn").addEventListener("click",()=>{
-  const lab = {dm:"DUNGEON MASTER", player:"THE TABLE", note:"THE SCRIBE"};
-  let mdOut = `# ${state.name||"Untitled Campaign"}\n_Exported ${new Date().toLocaleString()} — The Arbiter_\n\n`;
-  if(state.chronicle) mdOut += `## The chronicle so far\n${state.chronicle}\n\n## The session log\n\n`;
-  for(const m of state.messages){
-    mdOut += `**${lab[m.role]||"?"}:** ${m.text||""}\n`;
-    if(m.rolls && m.rolls.length) for(const r of m.rolls){
-      mdOut += r.result ? `> 🎲 ${rollResultLine(r)}\n` : `> 🎲 ${r.who?r.who+" — ":""}${r.type} (unrolled)\n`;
-    }
-    mdOut += "\n";
-  }
-  const blob = new Blob([mdOut], {type:"text/markdown"});
+  closeActions();
+  const lab = {dm:"DUNGEON MASTER", player:"THE TABLE", note:"THE TABLE", sys:"THE TABLE"};
+  let out = `# ${state.name||"Untitled Campaign"}\n_Exported ${new Date().toLocaleString()} — The Arbiter_\n\n`;
+  if(state.chronicle) out += `## The chronicle so far\n${state.chronicle}\n\n## The session log\n\n`;
+  for(const m of state.messages) out += `**${lab[m.role]||"?"}:** ${m.text||""}\n\n`;
+  const blob = new Blob([out], {type:"text/markdown"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = ((state.name||"campaign").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"campaign")+"-log.md";
@@ -1290,17 +1044,7 @@ document.getElementById("logBtn").addEventListener("click",()=>{
 });
 
 /* ================================================================
-   TABS
-================================================================ */
-document.querySelectorAll(".bkmk").forEach(b=>b.addEventListener("click",()=>{
-  document.querySelectorAll(".bkmk").forEach(x=>x.classList.remove("active"));
-  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
-  b.classList.add("active");
-  document.getElementById("page-"+b.dataset.page).classList.add("active");
-}));
-
-/* ================================================================
-   PARTY TAB
+   PARTY
 ================================================================ */
 const sheetList = document.getElementById("sheetList");
 const ABIL = ["str","dex","con","int","wis","cha"];
@@ -1309,9 +1053,9 @@ function renderSheets(){
   if(!state.sheets.length){ sheetList.innerHTML = `<div class="empty-note">No heroes inscribed yet. The Arbiter will improvise until you do.</div>`; }
   state.sheets.forEach((sh,i)=>{
     const el = document.createElement("div");
-    el.className = "sheet";
+    el.className = "card parch";
     el.innerHTML = `
-      <button class="sheet-del" title="Strike from the record" data-i="${i}">✕</button>
+      <button class="card-del press" title="Strike from the record" data-i="${i}">✕</button>
       <div class="row">
         <div><label class="f">NAME</label><input class="f" data-k="name" data-i="${i}" value="${escapeHTML(sh.name)}"></div>
         <div><label class="f">CLASS · LEVEL · ANCESTRY</label><input class="f" data-k="concept" data-i="${i}" value="${escapeHTML(sh.concept)}" placeholder="Rogue 3, Wood Elf"></div>
@@ -1320,9 +1064,9 @@ function renderSheets(){
         <div><label class="f">ARMOR CLASS</label><input class="f" data-k="ac" data-i="${i}" value="${escapeHTML(sh.ac)}"></div>
         <div><label class="f">HP CURRENT</label>
           <div class="hpline">
-            <button class="hpbtn" data-hp="-1" data-i="${i}" title="Take a hit">−</button>
+            <button class="hpbtn press" data-hp="-1" data-i="${i}" title="Take a hit">−</button>
             <input class="f" data-k="hpCur" data-i="${i}" value="${escapeHTML(sh.hpCur)}" inputmode="numeric">
-            <button class="hpbtn" data-hp="1" data-i="${i}" title="Heal a point">＋</button>
+            <button class="hpbtn press" data-hp="1" data-i="${i}" title="Heal a point">＋</button>
           </div>
         </div>
         <div><label class="f">HP MAX</label><input class="f" data-k="hpMax" data-i="${i}" value="${escapeHTML(sh.hpMax)}"></div>
@@ -1355,14 +1099,13 @@ sheetList.addEventListener("click",e=>{
     if(inp) inp.value = sh.hpCur;
     return;
   }
-  if(e.target.classList.contains("sheet-del")){
-    state.sheets.splice(e.target.dataset.i,1); persist(); renderSheets();
-  }
+  const del = e.target.closest(".card-del");
+  if(del){ state.sheets.splice(del.dataset.i,1); persist(); renderSheets(); }
 });
 document.getElementById("addSheet").addEventListener("click",()=>{ state.sheets.push(blankSheet()); persist(); renderSheets(); });
 
 /* ================================================================
-   CODEX TAB
+   CODEX
 ================================================================ */
 const codexList = document.getElementById("codexList");
 function renderCodex(){
@@ -1370,11 +1113,11 @@ function renderCodex(){
   if(!state.codex.length){ codexList.innerHTML = `<div class="empty-note">The codex lies empty — blank vellum awaiting your world.</div>`; }
   state.codex.forEach((c,i)=>{
     const el = document.createElement("div");
-    el.className = "codex-entry";
+    el.className = "card parch";
     el.innerHTML = `
-      <button class="sheet-del" data-i="${i}">✕</button>
+      <button class="card-del press" data-i="${i}">✕</button>
       <label class="f">TITLE</label><input class="f" data-k="title" data-i="${i}" value="${escapeHTML(c.title)}" placeholder="House rules · The Kingdom of Veyr · Session 3 recap…">
-      <label class="f">CONTENT</label><textarea class="f" data-k="body" data-i="${i}" style="min-height:110px">${escapeHTML(c.body)}</textarea>`;
+      <label class="f">CONTENT</label><textarea class="f" data-k="body" data-i="${i}" style="min-height:120px">${escapeHTML(c.body)}</textarea>`;
     codexList.appendChild(el);
   });
 }
@@ -1383,12 +1126,13 @@ codexList.addEventListener("input",e=>{
   state.codex[i][k] = e.target.value; persist();
 });
 codexList.addEventListener("click",e=>{
-  if(e.target.classList.contains("sheet-del")){ state.codex.splice(e.target.dataset.i,1); persist(); renderCodex(); }
+  const del = e.target.closest(".card-del");
+  if(del){ state.codex.splice(del.dataset.i,1); persist(); renderCodex(); }
 });
 document.getElementById("addCodex").addEventListener("click",()=>{ state.codex.push(blankCodex()); persist(); renderCodex(); });
 
 /* ================================================================
-   SETTINGS TAB
+   SETTINGS
 ================================================================ */
 const S = id => document.getElementById(id);
 function loadSettings(){
@@ -1407,12 +1151,16 @@ function loadSettings(){
 });
 
 /* ================================================================
-   CAMPAIGN SHELF — switch · rename · new · delete · export · import
+   CAMPAIGNS
 ================================================================ */
+function setTitle(){
+  S("topTitle").firstChild.textContent = state.name || "The Arbiter";
+}
 function renderShelf(){
   S("campSel").innerHTML = vault.campaigns
     .map(c=>`<option value="${c.id}" ${c.id===state.id?"selected":""}>${escapeHTML(c.name||"Untitled")}</option>`).join("");
   S("campName").value = state.name;
+  setTitle();
   disarmDelete();
 }
 function activate(id){
@@ -1425,13 +1173,13 @@ S("campName").addEventListener("input",()=>{
   state.name = S("campName").value; persist();
   const o = S("campSel").querySelector(`option[value="${state.id}"]`);
   if(o) o.textContent = state.name||"Untitled";
+  setTitle();
 });
 S("campNew").addEventListener("click",()=>{
   const c = freshCampaign("Campaign "+(vault.campaigns.length+1));
   vault.campaigns.push(c); activate(c.id);
 });
 
-/* Two-step delete: first press arms the button, second press within 3.5 s confirms */
 let delArm = null, delTimer = null;
 function disarmDelete(){
   delArm = null; clearTimeout(delTimer);
@@ -1440,7 +1188,7 @@ function disarmDelete(){
 S("campDel").addEventListener("click",()=>{
   const b = S("campDel");
   if(delArm !== state.id){
-    delArm = state.id; b.textContent = "SURE? PRESS AGAIN"; b.classList.add("armed");
+    delArm = state.id; b.textContent = "SURE? AGAIN"; b.classList.add("armed");
     clearTimeout(delTimer); delTimer = setTimeout(disarmDelete, 3500);
     return;
   }
@@ -1450,7 +1198,6 @@ S("campDel").addEventListener("click",()=>{
   activate(vault.campaigns[0].id);
 });
 
-/* Export: a self-describing file this same app re-imports fluidly. Never includes the API key. */
 function exportCampaign(){
   const payload = { app:"arbiter-dm", format:2, exported:new Date().toISOString(), campaign: state };
   const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
@@ -1459,30 +1206,21 @@ function exportCampaign(){
   a.download = ((state.name||"campaign").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"campaign")+".arbiter.json";
   a.click(); URL.revokeObjectURL(a.href);
 }
-/* Import: accepts native exports and legacy v1 files; always lands as a NEW campaign, never overwrites */
 function importCampaignFile(file){
   const r = new FileReader();
   r.onload = ()=>{
     try{
       const j = JSON.parse(r.result);
       let src = null;
-      if(j && j.app==="arbiter-dm" && j.campaign) src = j.campaign;                       // native format
-      else if(j && (Array.isArray(j.messages)||Array.isArray(j.sheets))) src = j;         // legacy v1 export
+      if(j && j.app==="arbiter-dm" && j.campaign) src = j.campaign;
+      else if(j && (Array.isArray(j.messages)||Array.isArray(j.sheets))) src = j;
       if(!src) throw 0;
       const nc = freshCampaign(String(src.name||"Imported Campaign").slice(0,80));
       nc.messages = (Array.isArray(src.messages)?src.messages:[])
-        .filter(m=>m && typeof m.text==="string" && (m.role==="dm"||m.role==="player"||m.role==="note"))
+        .filter(m=>m && typeof m.text==="string" && (m.role==="dm"||m.role==="player"||m.role==="note"||m.role==="sys"))
         .map(m=>{
-          const o = {role:m.role, text:m.text};
-          if(m.role==="dm"){
-            if(typeof m.raw==="string") o.raw = m.raw;
-            if(Array.isArray(m.rolls)) o.rolls = m.rolls.map(r=>({
-              type:String(r.type||"Check"), who:String(r.who||""),
-              mod:String(r.mod==null?"0":r.mod), dc:(r.dc==null?"":String(r.dc)),
-              mode:String(r.mode||"normal"),
-              result:(r.result && typeof r.result==="object") ? r.result : null
-            }));
-          }
+          const o = {role:(m.role==="sys"?"note":m.role), text:m.text};
+          if(o.role==="dm" && typeof m.raw==="string") o.raw = m.raw;
           return o;
         });
       nc.sheets = (Array.isArray(src.sheets)?src.sheets:[]).map(x=>Object.assign(blankSheet(), typeof x==="object"&&x?x:{}));
@@ -1508,15 +1246,8 @@ S("campFile").addEventListener("change",e=>{
   e.target.value = "";
 });
 
-S("shelfMore").addEventListener("click",()=>{
-  const open = S("shelf").classList.toggle("open");
-  S("shelfMore").setAttribute("aria-expanded", open ? "true" : "false");
-});
-
 /* ================================================================
-   SAFARI PWA — keep the layout glued to the visual viewport.
-   In a standalone web app iOS does NOT resize the page when the
-   keyboard opens; without this the quill hides behind the keys.
+   SAFARI PWA — glue layout to the visual viewport (keyboard, notch)
 ================================================================ */
 if(window.visualViewport){
   const vv = window.visualViewport;
@@ -1526,17 +1257,16 @@ if(window.visualViewport){
     raf = requestAnimationFrame(()=>{
       const shrunk = vv.height < window.innerHeight - 1;
       document.body.style.height = shrunk ? Math.round(vv.height)+"px" : "";
-      window.scrollTo(0,0);                 /* undo Safari's auto-pan */
-      scrollEl.scrollTop = scrollEl.scrollHeight;
+      window.scrollTo(0,0);
+      if(atBottom()) toBottom();
     });
   };
   vv.addEventListener("resize", fit);
   vv.addEventListener("scroll", ()=>window.scrollTo(0,0));
 }
-input.addEventListener("focus", ()=>setTimeout(()=>{ scrollEl.scrollTop = scrollEl.scrollHeight; }, 300));
+input.addEventListener("focus", ()=>setTimeout(toBottom, 300));
 
-/* Offline shell: the installed app launches instantly, signal or not.
-   (Registration quietly no-ops where service workers aren't allowed.) */
+/* Offline shell */
 if("serviceWorker" in navigator){
   addEventListener("load", ()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
 }
@@ -1544,7 +1274,7 @@ if("serviceWorker" in navigator){
 /* ================================================================
    BOOT
 ================================================================ */
-renderShelf(); renderAll(); renderSheets(); renderCodex(); loadSettings();
+renderShelf(); renderAll(); loadSettings();
 </script>
 </body>
 </html>
